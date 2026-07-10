@@ -30,6 +30,15 @@
             </div>
         </header>
 
+        @if ($courses->isNotEmpty())
+            <div class="mb-6 rounded-md bg-indigo-50/60 border border-indigo-100 px-4 py-3 text-sm">
+                <span class="text-gray-600">Part of </span>
+                @foreach ($courses as $c)
+                    <a href="{{ route('courses.show', $c->slug) }}" class="font-medium text-indigo-700 hover:underline">{{ $c->title }}</a>@unless ($loop->last),@endunless
+                @endforeach
+            </div>
+        @endif
+
         <div class="prose prose-indigo max-w-none prose-headings:scroll-mt-20 prose-a:text-indigo-700">
             {!! $html !!}
         </div>

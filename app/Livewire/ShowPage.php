@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Models\Course;
 use App\Models\Link;
 use App\Models\Page;
 use App\Services\Wiki\WikiRenderer;
@@ -18,6 +19,9 @@ class ShowPage extends Component
 
     /** @var \Illuminate\Support\Collection<int,\App\Models\Page> */
     public $backlinks;
+
+    /** @var \Illuminate\Support\Collection<int,\App\Models\Course> */
+    public $courses;
 
     public function mount(string $slug, WikiRenderer $renderer): void
     {
@@ -41,6 +45,12 @@ class ShowPage extends Component
             ->unique('id')
             ->sortBy('title')
             ->values();
+
+        // Published courses that use this page as a lesson (wiki ↔ course cross-link).
+        $this->courses = Course::published()
+            ->whereHas('lessons', fn (Builder $q) => $q->where('lessons.page_id', $page->id))
+            ->orderBy('title')
+            ->get(['id', 'slug', 'title']);
     }
 
     public function render()
