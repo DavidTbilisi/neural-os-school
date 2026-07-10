@@ -77,6 +77,11 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(Drawing::class);
     }
 
+    public function gymSessions(): HasMany
+    {
+        return $this->hasMany(GymSession::class);
+    }
+
     public function isEnrolledIn(Course $course): bool
     {
         return $this->enrollments()->where('course_id', $course->id)->exists();

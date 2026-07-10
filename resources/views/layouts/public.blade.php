@@ -14,6 +14,7 @@
             </a>
             <a href="{{ route('library') }}" class="text-sm text-gray-600 hover:text-gray-900">Library</a>
             <a href="{{ route('courses') }}" class="text-sm text-gray-600 hover:text-gray-900">Courses</a>
+            <a href="{{ route('gyms') }}" class="text-sm text-gray-600 hover:text-gray-900">Gyms</a>
             <nav class="ml-auto flex items-center gap-4 text-sm">
                 @auth
                     <a href="{{ route('courses.mine') }}" class="text-gray-600 hover:text-gray-900">My courses</a>

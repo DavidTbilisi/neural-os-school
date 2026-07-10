@@ -62,6 +62,12 @@ class Course extends Model
         return $this->hasMany(Enrollment::class);
     }
 
+    /** Gyms offered as "Practice" for this course. */
+    public function gyms(): HasMany
+    {
+        return $this->hasMany(Gym::class);
+    }
+
     public function isPublished(): bool
     {
         return $this->status === self::STATUS_PUBLISHED;

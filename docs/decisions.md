@@ -137,9 +137,19 @@ Per-course **Excalidraw sketchpad** — a real drawing whiteboard inside each co
 - **Bug fixed en route:** `bootstrap/app.php` only rendered JSON errors for `api/*`, so a validation failure on the JSON save endpoint took the HTML redirect-back path and threw. Widened to `api/* || $request->expectsJson()` (Laravel's own default) — a latent bug that would have hit any AJAX endpoint.
 - Bundle note: the sketchpad chunk is ~1.3 MB (Excalidraw pulls mermaid/katex/cytoscape); it loads only on its own page. Excalidraw fonts currently load from unpkg at runtime — self-host via `EXCALIDRAW_ASSET_PATH` if this needs to run offline.
 
+## Slice 6 — DONE (2026-07-10)
+
+Gyms — the wiki's spec-driven web-gym engine, rebuilt natively with **server-side METER telemetry**. Forks locked with the user: **algorithm-pattern gym first** (pairs with the DSA course), **linked to courses now**. Recognition mode only in v1. Verified by `GymTest` (63 tests pass total) + a live browser round-trip (intro → timed round → timeout → feedback with explanation → attempt logged).
+
+- **The model** mirrors the wiki's `web-gym-generation-schema`: `gyms` (mode, target reflex, timer/round config, pass/promote thresholds, `stages` JSON, optional `course_id`) + `gym_items` (prompt, `choices` JSON, correct, explanation, near-miss `detail`). A gym is a timed classification session.
+- **Telemetry = the point** (not `localStorage` like the HTML gyms): every play-through writes `gym_sessions` (accuracy, correct/total, median latency, computed `stage_code`) + `gym_attempts` (item, selected, is_correct, `latency_ms`). This is the concrete seed of METER (Slice 7) — per-learner event data server-side.
+- **Engine** (`App\Livewire\PlayGym`): intro → prompt → feedback → summary. An **Alpine** timer/stopwatch in the view drives the `timer_seconds` countdown and measures answer latency (prompt-render → click), calling `answer()`/timeout back into Livewire; the core logic (scoring, attempt logging, session finalize, stage read, top-confusion pair) is server-side and directly unit-tested. `start()` is guarded to one session per run (no abandoned sessions from double-clicks). Playing requires auth (telemetry is per-learner); browsing `/gyms` is public.
+- **First gym** (`GymSeeder`, published): **Algorithm Pattern Gym** — 20 recognition items ported from `gyms/algorithm-pattern-gym.html`, 8s timer, 5-stage ladder, **linked to `/courses/dsa`**. The DSA course page shows a 🏋 **Practice** link to it, and the gym links back. `./run php artisan db:seed --class=GymSeeder`.
+- Public surface: `/gyms` index + `/gyms/{slug}` play, plus a **Gyms** nav item. Execution/retrieval/stress modes and a `gyms:import` command for `.spec.json` gyms are deferred.
+
 ## Testing (2026-07-10)
 
 Two layers:
 
-- **PHPUnit feature tests** (`./run php artisan test`) — 55 in-process tests: routing, Livewire components, Filament resources/widgets, auth, roles, visibility, wiki-link resolution, the courses layer (scaffolder, enrollment/progress/completion, soft prerequisites, admin curation), and the sketchpad (auth gate, save upsert, ownership isolation, draft visibility).
+- **PHPUnit feature tests** (`./run php artisan test`) — 63 in-process tests: routing, Livewire components, Filament resources/widgets, auth, roles, visibility, wiki-link resolution, the courses layer (scaffolder, enrollment/progress/completion, soft prerequisites, admin curation), the sketchpad (auth gate, save upsert, ownership isolation, draft visibility), and the gym engine (session flow, attempt/session telemetry, stage read, course link).
 - **Playwright smoke suite** (`npm run e2e`, `e2e/*.spec.ts`) — 5 real-browser tests (headless chromium on host Node, reuses the container's server): guest reads a page + follows an internal link, live search filters, private page 404s, admin login + lazy dashboard widgets load, admin pages list renders. Config uses `127.0.0.1` (not `localhost`) so the reuse-probe hits pasta's IPv4 listener.

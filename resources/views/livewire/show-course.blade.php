@@ -7,12 +7,20 @@
 
     <div class="mb-2 flex items-center justify-between">
         <a href="{{ route('courses') }}" class="text-sm text-gray-500 hover:text-gray-700">&larr; All courses</a>
-        @auth
-            <a href="{{ route('courses.sketchpad', $course->slug) }}"
-               class="inline-flex items-center gap-1.5 rounded-md border border-indigo-200 bg-white px-3 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-50">
-                ✎ Sketchpad
-            </a>
-        @endauth
+        <div class="flex items-center gap-2">
+            @if ($practiceGym)
+                <a href="{{ route('gyms.play', $practiceGym->slug) }}"
+                   class="inline-flex items-center gap-1.5 rounded-md border border-indigo-200 bg-white px-3 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-50">
+                    🏋 Practice
+                </a>
+            @endif
+            @auth
+                <a href="{{ route('courses.sketchpad', $course->slug) }}"
+                   class="inline-flex items-center gap-1.5 rounded-md border border-indigo-200 bg-white px-3 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-50">
+                    ✎ Sketchpad
+                </a>
+            @endauth
+        </div>
     </div>
 
     <div class="flex flex-wrap items-start justify-between gap-4">

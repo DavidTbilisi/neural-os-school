@@ -23,7 +23,7 @@ class ShowCourse extends Component
     public function mount(string $slug): void
     {
         $course = Course::where('slug', $slug)
-            ->with(['domain', 'sourcePage', 'modules.lessons.page', 'prerequisites'])
+            ->with(['domain', 'sourcePage', 'modules.lessons.page', 'prerequisites', 'gyms'])
             ->firstOrFail();
 
         // Published is public; draft is a staff-only preview.
@@ -131,6 +131,7 @@ class ShowCourse extends Component
             'requiredDone' => $doneCount,
             'prereqs' => $prereqs,
             'prereqsMet' => $this->course->prerequisitesMetBy($user),
+            'practiceGym' => $this->course->gyms->firstWhere('status', \App\Models\Gym::STATUS_PUBLISHED),
         ]);
     }
 }
