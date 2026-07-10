@@ -147,9 +147,19 @@ Gyms — the wiki's spec-driven web-gym engine, rebuilt natively with **server-s
 - **First gym** (`GymSeeder`, published): **Algorithm Pattern Gym** — 20 recognition items ported from `gyms/algorithm-pattern-gym.html`, 8s timer, 5-stage ladder, **linked to `/courses/dsa`**. The DSA course page shows a 🏋 **Practice** link to it, and the gym links back. `./run php artisan db:seed --class=GymSeeder`.
 - Public surface: `/gyms` index + `/gyms/{slug}` play, plus a **Gyms** nav item. Execution/retrieval/stress modes and a `gyms:import` command for `.spec.json` gyms are deferred.
 
+## Slice 7 — DONE (2026-07-10)
+
+METER — the measurement layer over the telemetry the gyms/courses now emit, turning "am I improving?" into numbers. Forks locked with the user: **the learner `/dashboard` placeholder becomes the real METER dashboard**; **learner-only/private** (no admin cohort view in v1). Faithful to the wiki's METER spec (`[[meter-overview]]`): unified event schema, pass/floor/target evaluation, N<10 "insufficient signal", trends-not-point-estimates, and no gamification. Verified by `MeterTest` (70 tests pass total) + a live browser round-trip.
+
+- **Unified event log** (`meter_events`): the append-only schema (`layer` · `operation` · `metric_type` · `mode` · `correct` · `latency_ms` · `value` · `context` · `source_key`). One table for all layers — future SRS/PULSE write here too, so cross-layer patterns stay queryable. `source_key` (e.g. `gym_attempt:123`) makes every emit idempotent.
+- **Emit** (`App\Support\Meter`): `PlayGym` emits a `performance/gym-rep` per attempt + a `gym-session` summary on finalize; `ShowCourse` emits a `retrieval/lesson-complete` on completion. `meter:backfill` replays existing `gym_attempts`/`gym_sessions`/`lesson_completions` into the log (idempotent via `source_key`), so history collected before live-emit appears.
+- **Evaluate + Report** (`App\Services\Meter\Report`): per-gym rolling accuracy + median latency vs floor/working/target → a verdict (Promote-ready / On track / Below target / Needs attention / Insufficient signal), a latency read, the latest session's stage, a per-session accuracy trend, and a 3-session floor-breach flag. Scoped to one user (private).
+- **Dashboard** (`DashboardController` → `dashboard.blade`, on the Breeze auth layout — keeps logout/profile): Daily Glance, the performance panel (verdict + accuracy/latency/stage + trend sparkline), course progress, window totals, and a Goodhart "signals, not a scoreboard" prompt. **No streaks/points/leaderboards**, per METER's non-goals.
+- Deferred: Weekly/Monthly report generation, calibration suggestions, PULSE state-conditioning, and an admin cohort view.
+
 ## Testing (2026-07-10)
 
 Two layers:
 
-- **PHPUnit feature tests** (`./run php artisan test`) — 63 in-process tests: routing, Livewire components, Filament resources/widgets, auth, roles, visibility, wiki-link resolution, the courses layer (scaffolder, enrollment/progress/completion, soft prerequisites, admin curation), the sketchpad (auth gate, save upsert, ownership isolation, draft visibility), and the gym engine (session flow, attempt/session telemetry, stage read, course link).
+- **PHPUnit feature tests** (`./run php artisan test`) — 70 in-process tests: routing, Livewire components, Filament resources/widgets, auth, roles, visibility, wiki-link resolution, the courses layer (scaffolder, enrollment/progress/completion, soft prerequisites, admin curation), the sketchpad (auth gate, save upsert, ownership isolation, draft visibility), the gym engine (session flow, attempt/session telemetry, stage read, course link), and METER (emit on rep/session/lesson, backfill idempotency, verdict thresholds + insufficient-signal, per-user scoping, dashboard render).
 - **Playwright smoke suite** (`npm run e2e`, `e2e/*.spec.ts`) — 5 real-browser tests (headless chromium on host Node, reuses the container's server): guest reads a page + follows an internal link, live search filters, private page 404s, admin login + lazy dashboard widgets load, admin pages list renders. Config uses `127.0.0.1` (not `localhost`) so the reuse-probe hits pasta's IPv4 listener.

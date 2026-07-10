@@ -6,6 +6,7 @@ use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Lesson;
 use App\Models\LessonCompletion;
+use App\Support\Meter;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -68,11 +69,13 @@ class ShowCourse extends Component
         if ($existing) {
             $existing->delete();
         } else {
-            LessonCompletion::create([
+            $completion = LessonCompletion::create([
                 'user_id' => auth()->id(),
                 'lesson_id' => $lesson->id,
                 'completed_at' => Carbon::now(),
             ]);
+
+            Meter::lessonComplete($completion); // emit the METER retrieval event
         }
 
         $this->syncCompletion();

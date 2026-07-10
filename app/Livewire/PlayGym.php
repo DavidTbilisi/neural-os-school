@@ -6,6 +6,7 @@ use App\Models\Gym;
 use App\Models\GymAttempt;
 use App\Models\GymItem;
 use App\Models\GymSession;
+use App\Support\Meter;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -80,13 +81,15 @@ class PlayGym extends Component
 
         $isCorrect = $item->isCorrect($choice);
 
-        GymAttempt::create([
+        $attempt = GymAttempt::create([
             'gym_session_id' => $this->sessionId,
             'gym_item_id' => $item->id,
             'selected' => $choice,
             'is_correct' => $isCorrect,
             'latency_ms' => max(0, $latencyMs),
         ]);
+
+        Meter::gymRep($attempt); // emit the METER rep event
 
         GymSession::whereKey($this->sessionId)->update([
             'total' => $this->session()->total + 1,
@@ -141,6 +144,8 @@ class PlayGym extends Component
             'median_latency_ms' => $median,
             'stage_code' => $this->gym->stageFor($accuracy, $median),
         ]);
+
+        Meter::gymSession($session); // emit the METER session-summary event
     }
 
     public function currentItem(): ?GymItem

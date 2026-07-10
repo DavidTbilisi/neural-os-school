@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SketchpadController;
 use App\Livewire\Courses;
 use App\Livewire\Gyms;
@@ -32,7 +33,7 @@ Route::middleware('auth')->group(function () {
 Route::get('/gyms', Gyms::class)->name('gyms');
 Route::get('/gyms/{slug}', PlayGym::class)->middleware('auth')->name('gyms.play');
 
-Route::view('dashboard', 'dashboard')
+Route::get('dashboard', [DashboardController::class, 'show'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
