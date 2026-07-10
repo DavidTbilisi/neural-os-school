@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Run any command inside the academy-php container with the project mounted.
+# Node/Vite run natively on the host; use this only for PHP/Composer/Artisan.
+#
+#   ./run composer install
+#   ./run php artisan migrate
+#   ./run php artisan serve --host=0.0.0.0 --port=8000   # http://localhost:8000
+#
+set -euo pipefail
+cd "$(dirname "$0")"
+
+tty_flag=()
+[ -t 0 ] && tty_flag=(-it)
+
+# Only publish the web port when actually serving, so other commands can run
+# concurrently with a running dev server (podman can't double-bind the port).
+publish=()
+case " $* " in
+  *" serve "*) publish=(-p 8000:8000) ;;
+esac
+
+exec podman run --rm "${tty_flag[@]}" \
+  -v "$PWD":/app:z \
+  -w /app \
+  -e COMPOSER_ALLOW_SUPERUSER=1 \
+  "${publish[@]}" \
+  academy-php "$@"
