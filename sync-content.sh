@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copy a snapshot of the canonical wiki into academy/content/ (host-side, no PHP).
+# Copy a snapshot of the canonical wiki into the project's content/ (host-side, no PHP).
 # The markdown repo stays canonical; this is a read-only import staging copy.
 # Re-run any time to re-sync, then: ./run php artisan wiki:import
 #

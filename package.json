@@ -1,5 +1,6 @@
 {
     "$schema": "https://www.schemastore.org/package.json",
+    "name": "neural-os-school",
     "private": true,
     "type": "module",
     "scripts": {
