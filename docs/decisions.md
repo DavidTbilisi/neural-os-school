@@ -31,7 +31,7 @@ publishing is deliberate and gated — not "import everything and expose it."
 
 ## Stack (as built)
 
-- **Laravel 13.19** (PHP 8.3), **Filament v3.3.54** admin, **Livewire 3.8** + Tailwind public frontend.
+- **Laravel 13.19** (PHP 8.3), **Filament v3.3.54** admin, **Livewire 3.8** + Tailwind public frontend. (Slice 5.1 adds a single **React 18 island** — Excalidraw — scoped to the course sketchpad; Livewire stays the default everywhere else.)
 - `league/commonmark` 2.8 for Markdown → HTML, with a custom `[[wiki-link]]` inline parser (to build).
 - **PHP runs in a podman container** (`Containerfile` → `academy-php` image); Node/Vite native on host. All PHP/Composer/Artisan go through the `./run` wrapper. No system PHP / no sudo.
 - DB: SQLite (`database/database.sqlite`) for dev.
@@ -127,9 +127,19 @@ Courses + soft mastery-tree — the learning layer on top of the read-only wiki.
 - **First real course** (curated, published): `database/seeders/DsaCourseSeeder.php` — the courses layer's `wiki:publish-starter`. Hand-curated **Data Structures & Algorithms** (`/courses/dsa`): 10 modules, 57 lessons (54 required + a 3-lesson optional Practice module) over the published `programming/` DSA atlas — Foundations & Complexity → Linear DS → Hashing/Heaps → Trees → Sorting/Searching → Design Paradigms → Graph Algorithms → Coding Patterns → Strings/Math/Hardness → drills. Idempotent; drops the rough `dsa-roadmap` scaffold demo when it runs. `./run php artisan db:seed --class=DsaCourseSeeder`.
 - Next slices unchanged: Gyms (native rebuild), SRS, METER.
 
+## Slice 5.1 — DONE (2026-07-10)
+
+Per-course **Excalidraw sketchpad** — a real drawing whiteboard inside each course. Locked with the user: **one whiteboard per learner per course**, using **actual Excalidraw** (not a lookalike). Verified by `SketchpadTest` (55 tests pass total) + a live browser round-trip (drew a rectangle → autosaved → reloaded → rehydrated from DB).
+
+- **First React in the app.** Excalidraw is React-only, so `@excalidraw/excalidraw` 0.18 + `react`/`react-dom` 18.3 + `@vitejs/plugin-react` were added as a **React island** — one Vite entry (`resources/js/sketchpad.jsx`) mounted into a plain Blade page (`courses/sketchpad.blade.php`), *not* a Livewire component, so React owns its DOM subtree with no morphdom conflict. `vite.config.js` gains the react plugin + `define: { 'process.env.IS_PREACT': ... }` (Excalidraw reads it at runtime). Livewire/Blade stays the default for everything else; React is scoped to this island.
+- **Persistence.** `drawings` table = one row per `(user_id, course_id)`, `scene` = raw Excalidraw `serializeAsJSON` output (elements + appState + files). `SketchpadController@show` embeds the saved scene via `@json` (hex-escapes `</script>`) as `initialData`; `@save` upserts it. Routes are `auth`-gated; published courses open to any learner, drafts staff-only (same visibility rule as the reader). Scene capped at 8 MB, validated as JSON.
+- **Autosave.** The island debounces saves (1.5 s) but gates them on Excalidraw's `getSceneVersion` — mount, selection, and viewport-only changes don't write; only real element edits do. Plus an explicit **Save** button + status. Reached via an **✎ Sketchpad** link on the course page (`/courses/{slug}/sketchpad`).
+- **Bug fixed en route:** `bootstrap/app.php` only rendered JSON errors for `api/*`, so a validation failure on the JSON save endpoint took the HTML redirect-back path and threw. Widened to `api/* || $request->expectsJson()` (Laravel's own default) — a latent bug that would have hit any AJAX endpoint.
+- Bundle note: the sketchpad chunk is ~1.3 MB (Excalidraw pulls mermaid/katex/cytoscape); it loads only on its own page. Excalidraw fonts currently load from unpkg at runtime — self-host via `EXCALIDRAW_ASSET_PATH` if this needs to run offline.
+
 ## Testing (2026-07-10)
 
 Two layers:
 
-- **PHPUnit feature tests** (`./run php artisan test`) — 49 in-process tests: routing, Livewire components, Filament resources/widgets, auth, roles, visibility, wiki-link resolution, and the courses layer (scaffolder, enrollment/progress/completion, soft prerequisites, admin curation).
+- **PHPUnit feature tests** (`./run php artisan test`) — 55 in-process tests: routing, Livewire components, Filament resources/widgets, auth, roles, visibility, wiki-link resolution, the courses layer (scaffolder, enrollment/progress/completion, soft prerequisites, admin curation), and the sketchpad (auth gate, save upsert, ownership isolation, draft visibility).
 - **Playwright smoke suite** (`npm run e2e`, `e2e/*.spec.ts`) — 5 real-browser tests (headless chromium on host Node, reuses the container's server): guest reads a page + follows an internal link, live search filters, private page 404s, admin login + lazy dashboard widgets load, admin pages list renders. Config uses `127.0.0.1` (not `localhost`) so the reuse-probe hits pasta's IPv4 listener.
