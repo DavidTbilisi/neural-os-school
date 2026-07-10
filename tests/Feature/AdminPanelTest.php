@@ -3,8 +3,15 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
+use App\Filament\Widgets\CoverageHeatmap;
+use App\Filament\Widgets\DomainScoresChart;
+use App\Filament\Widgets\WikiStatsOverview;
+use App\Models\Page;
+use App\Models\ScoreLens;
 use App\Models\User;
+use Database\Seeders\WikiReferenceSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class AdminPanelTest extends TestCase
@@ -59,5 +66,25 @@ class AdminPanelTest extends TestCase
     {
         $user = User::factory()->create();
         $this->assertSame(UserRole::Learner, $user->fresh()->role);
+    }
+
+    public function test_dashboard_widgets_render_with_data(): void
+    {
+        (new WikiReferenceSeeder)->run();
+
+        ScoreLens::create(['lens_type' => 'total', 'lens_key' => '__total__', 'pages' => 1000,
+            'complexity' => 11136.4, 'acquirement' => 1207, 'absorbed' => 10.8]);
+        ScoreLens::create(['lens_type' => 'domain', 'lens_key' => '10', 'lens_label' => 'Learning',
+            'pages' => 700, 'complexity' => 5000, 'acquirement' => 500, 'absorbed' => 10]);
+
+        Page::create(['slug' => 'p1', 'title' => 'P1', 'rel_path' => 'learning-systems/p1.md',
+            'body_md' => '# P1', 'domain_id' => 10, 'palace' => 'core-memory', 'visibility' => 'public']);
+
+        $this->actingAs($this->admin());
+
+        // Widgets are lazy on the dashboard, so render them directly.
+        Livewire::test(WikiStatsOverview::class)->assertOk()->assertSee('Complexity')->assertSee('Absorbed');
+        Livewire::test(DomainScoresChart::class)->assertOk();
+        Livewire::test(CoverageHeatmap::class)->assertOk()->assertSee('Coverage');
     }
 }

@@ -41,6 +41,7 @@ class WikiImport extends Command
         $this->importMarks($parsed, $slugMap);
         $glossary = $this->importGlossary($contentPath, $slugMap);
         [$unlocks, $pageUnlocks] = $this->importUnlocks($contentPath, $slugMap);
+        $this->importScores($contentPath);
 
         if ($this->option('prune')) {
             $this->prune(array_keys($slugMap), $parsed);
@@ -249,6 +250,61 @@ class WikiImport extends Command
         return [count($unlockRows), count($pageUnlockRows)];
     }
 
+    /** Import the wiki's dashboard-scores.json (Complexity/Acquirement/Absorbed-%) into score_lenses. */
+    private function importScores(string $contentPath): void
+    {
+        $path = "{$contentPath}/_meta/dashboard-scores.json";
+        if (! File::exists($path)) {
+            $this->warn('  missing dashboard-scores.json — scores skipped');
+
+            return;
+        }
+
+        $data = json_decode(File::get($path), true);
+        if (! is_array($data)) {
+            $this->warn('  dashboard-scores.json unreadable — scores skipped');
+
+            return;
+        }
+
+        DB::table('score_lenses')->truncate();
+
+        $totals = $data['totals'] ?? [];
+        $rows = [[
+            'lens_type' => 'total',
+            'lens_key' => '__total__',
+            'lens_label' => 'Total',
+            'pages' => (int) ($totals['pages'] ?? 0),
+            'complexity' => (float) ($totals['complexity'] ?? 0),
+            'acquirement' => (float) ($totals['acquirement'] ?? 0),
+            'absorbed' => (float) ($totals['absorbed_pct'] ?? 0),
+            'extra' => json_encode([
+                'edges' => $totals['edges'] ?? 0,
+                'glossary_terms' => $totals['glossary_terms'] ?? 0,
+                'recall_packs' => $totals['recall_packs'] ?? 0,
+                'skills_tracked' => $totals['skills_tracked'] ?? 0,
+                'generated' => $data['generated'] ?? null,
+            ]),
+        ]];
+
+        foreach (['domain', 'palace', 'track'] as $type) {
+            foreach ($data['lenses'][$type] ?? [] as $row) {
+                $rows[] = [
+                    'lens_type' => $type,
+                    'lens_key' => (string) ($row['key'] ?? ''),
+                    'lens_label' => $row['label'] ?? null,
+                    'pages' => (int) ($row['pages'] ?? 0),
+                    'complexity' => (float) ($row['complexity'] ?? 0),
+                    'acquirement' => (float) ($row['acquirement'] ?? 0),
+                    'absorbed' => (float) ($row['absorbed'] ?? 0),
+                    'extra' => null,
+                ];
+            }
+        }
+
+        DB::table('score_lenses')->insert($rows);
+    }
+
     /**
      * Read a generated TSV: skip `#` comment lines and the header row, then map
      * each remaining tab-split row onto $columns.
@@ -336,6 +392,8 @@ class WikiImport extends Command
         $orphans = DB::table('pages')->where('inbound_count', 0)->where('is_meta', false)->count();
         $unclean = DB::table('pages')->where('axis_clean', false)->count();
 
+        $total = DB::table('score_lenses')->where('lens_type', 'total')->first();
+
         $this->newLine();
         $this->info('Import complete:');
         $this->table(['metric', 'count'], [
@@ -349,6 +407,9 @@ class WikiImport extends Command
             ['glossary terms', $glossary],
             ['unlocks', $unlocks],
             ['page-unlock rows', $pageUnlocks],
+            ['complexity', $total?->complexity ?? '—'],
+            ['acquirement', $total?->acquirement ?? '—'],
+            ['absorbed %', $total?->absorbed ?? '—'],
         ]);
     }
 }

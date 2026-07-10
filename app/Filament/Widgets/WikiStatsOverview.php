@@ -3,12 +3,15 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Page;
+use App\Models\ScoreLens;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\DB;
 
 class WikiStatsOverview extends BaseWidget
 {
+    protected static ?int $sort = 1;
+
     protected function getStats(): array
     {
         $pages = Page::count();
@@ -16,6 +19,9 @@ class WikiStatsOverview extends BaseWidget
         $private = Page::where('visibility', Page::VISIBILITY_PRIVATE)->count();
         $broken = DB::table('links')->where('resolved', false)->count();
         $orphans = Page::where('inbound_count', 0)->where('is_meta', false)->count();
+        $total = ScoreLens::total();
+
+        $fmt = fn ($n) => $n === null ? '—' : number_format((float) $n, 1);
 
         return [
             Stat::make('Pages', number_format($pages))
@@ -28,19 +34,25 @@ class WikiStatsOverview extends BaseWidget
                 ->descriptionIcon('heroicon-m-globe-alt')
                 ->color($public > 0 ? 'success' : 'gray'),
 
+            Stat::make('Complexity', $fmt($total?->complexity))
+                ->description('weighted knowledge mass')
+                ->descriptionIcon('heroicon-m-cube-transparent')
+                ->color('info'),
+
+            Stat::make('Acquirement', $fmt($total?->acquirement))
+                ->description('how much is absorbed')
+                ->descriptionIcon('heroicon-m-academic-cap')
+                ->color('info'),
+
+            Stat::make('Absorbed', $total ? number_format($total->absorbed, 1).'%' : '—')
+                ->description('acquirement ÷ complexity')
+                ->descriptionIcon('heroicon-m-battery-50')
+                ->color($total && $total->absorbed >= 20 ? 'success' : 'warning'),
+
             Stat::make('Links', number_format(DB::table('links')->count()))
-                ->description(number_format($broken).' broken')
+                ->description(number_format($broken).' broken · '.number_format($orphans).' orphans')
                 ->descriptionIcon('heroicon-m-link')
                 ->color($broken > 0 ? 'danger' : 'success'),
-
-            Stat::make('Orphan pages', number_format($orphans))
-                ->description('no inbound links')
-                ->descriptionIcon('heroicon-m-arrow-down-on-square')
-                ->color($orphans > 0 ? 'warning' : 'success'),
-
-            Stat::make('Glossary terms', number_format(DB::table('glossary_terms')->count())),
-
-            Stat::make('Unlocks', number_format(DB::table('unlocks')->count())),
         ];
     }
 }
