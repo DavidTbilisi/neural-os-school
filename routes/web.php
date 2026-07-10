@@ -4,7 +4,7 @@ use App\Livewire\Library;
 use App\Livewire\ShowPage;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'welcome');
+Route::redirect('/', '/library');
 
 // Public learner frontend — the reader for published wiki pages.
 Route::get('/library', Library::class)->name('library');
