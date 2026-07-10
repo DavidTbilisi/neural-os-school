@@ -30,3 +30,9 @@ Thumbs.db
 /content
 /database/*.sqlite
 /database/*.sqlite-journal
+
+# Playwright
+/test-results
+/playwright-report
+/blob-report
+/playwright/.cache
