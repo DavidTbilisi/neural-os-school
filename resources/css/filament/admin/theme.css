@@ -1,0 +1,43 @@
+/* ============================================================================
+   Neural OS School — Filament admin theme
+   Lives at: resources/css/filament/admin/theme.css
+   Registered via AdminPanelProvider->viteTheme('resources/css/filament/admin/theme.css').
+
+   Goal: the admin panel consumes the SAME tokens as the public site, so the
+   two stop drifting (oxblood primary instead of amber; shared warm-paper
+   neutrals; Figtree UI; shared warm dark mode). Filament v3 stores its palette
+   as RGB-channel custom properties (--primary-500: R G B), which lines up
+   exactly with tokens.css, so we remap Filament's ramps onto our variables.
+
+   The primary/gray *ramp* is set in PHP (AdminPanelProvider):
+       ->colors(['primary' => Color::hex('#8B2E3C'), 'gray' => Color::Stone])
+       ->font('Figtree')
+   This CSS handles the rest (shared tokens + a couple of surface nudges).
+
+   NOTE: the Filament base import below uses a relative path (not the `/vendor/…`
+   root-form) so postcss-import resolves it deterministically.
+   ============================================================================ */
+
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+/* Make the shared tokens available inside the panel (custom widgets read these) */
+@import '../../tokens.css';
+
+@config 'tailwind.config.js';
+
+/* ----------------------------------------------------------------------------
+   Bind Filament's own semantic surfaces to our authored palette so admin light
+   AND dark match the public site exactly (Filament already toggles `.dark`).
+   -------------------------------------------------------------------------- */
+:root {
+  /* Panel canvas + cards → our bg/surface */
+  --gray-50:  var(--color-bg);
+  --gray-100: var(--color-surface-sunken);
+}
+
+/* Custom widgets: shared tokens instead of hardcoded hex/rgba, so they are
+   theme-aware. e.g. coverage-heatmap.blade.php used rgba(99,102,241, α). */
+.no-school-heatmap-cell {
+  background-color: rgb(var(--color-primary) / var(--cell-alpha, 0.15));
+  color: rgb(var(--color-fg));
+}

@@ -1,19 +1,19 @@
 <div class="max-w-2xl mx-auto">
     <div class="mb-4 flex items-center justify-between">
-        <a href="{{ route('gyms') }}" class="text-sm text-gray-500 hover:text-gray-700">&larr; All gyms</a>
+        <a href="{{ route('gyms') }}" class="text-sm text-muted hover:text-fg">&larr; All gyms</a>
         @if ($gym->course)
-            <a href="{{ route('courses.show', $gym->course->slug) }}" class="text-sm text-indigo-700 hover:underline">{{ $gym->course->title }} &rarr;</a>
+            <a href="{{ route('courses.show', $gym->course->slug) }}" class="text-sm text-primary hover:underline">{{ $gym->course->title }} &rarr;</a>
         @endif
     </div>
 
     {{-- INTRO ---------------------------------------------------------------}}
     @if ($phase === 'intro')
-        <div class="rounded-xl border border-gray-100 bg-white p-6 text-center">
-            <h1 class="text-2xl font-bold tracking-tight">{{ $gym->title }}</h1>
+        <div class="rounded-xl border border-border bg-surface p-6 text-center">
+            <h1 class="font-serif text-3xl font-semibold tracking-tight text-fg">{{ $gym->title }}</h1>
             @if ($gym->target_reflex)
-                <p class="mt-3 text-gray-600">{{ $gym->target_reflex }}</p>
+                <p class="mt-3 text-muted">{{ $gym->target_reflex }}</p>
             @endif
-            <div class="mt-4 flex items-center justify-center gap-3 text-sm text-gray-500">
+            <div class="mt-4 flex items-center justify-center gap-3 text-sm text-muted">
                 <span>{{ $rounds ?: $gym->round_count }} rounds</span>
                 <span aria-hidden="true">·</span>
                 <span>{{ $gym->timer_seconds }}s each</span>
@@ -21,9 +21,21 @@
                 <span>promote at {{ round($gym->promote_accuracy * 100) }}%</span>
             </div>
             <button wire:click="start"
-                    class="mt-6 rounded-md bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500">
+                    class="mt-6 rounded-md bg-primary px-6 py-2.5 text-sm font-semibold text-primary-fg hover:bg-primary-hover">
                 Start session
             </button>
+
+            {{-- Red Queen Knowledge Ladder — what this gym climbs toward. --}}
+            <div class="mt-6 border-t border-border pt-5 text-left">
+                <div class="mb-2 flex items-center justify-between gap-2">
+                    <p class="text-xs font-medium text-muted">
+                        Knowledge ladder — trains up to
+                        <span class="font-semibold text-primary">{{ $gymCeiling }} · {{ $ladder[$gymCeiling]['name'] }}</span>
+                    </p>
+                    <a href="{{ route('wiki.show', 'red-queen-knowledge-ladder') }}" class="shrink-0 text-xs text-primary hover:underline">the ladder →</a>
+                </div>
+                <x-knowledge-ladder :ladder="$ladder" :ceiling="$gymCeiling" />
+            </div>
         </div>
 
     {{-- PROMPT (timed round) ------------------------------------------------}}
@@ -44,24 +56,24 @@
                 pick(choice) { this.stop(); $wire.answer(choice, Math.round(performance.now() - this.t0)); },
                 destroy() { this.stop(); }
              }">
-            <div class="flex items-center justify-between text-xs text-gray-500 mb-2">
+            <div class="flex items-center justify-between text-xs text-muted mb-2">
                 <span>Round {{ $round }} / {{ $rounds }}</span>
                 <span x-text="remaining.toFixed(1) + 's'"></span>
             </div>
-            <div class="h-1.5 w-full rounded-full bg-gray-100 mb-5 overflow-hidden">
-                <div class="h-1.5 rounded-full bg-indigo-500 transition-none"
+            <div class="h-1.5 w-full rounded-full bg-surface-sunken mb-5 overflow-hidden">
+                <div class="h-1.5 rounded-full bg-primary transition-none"
                      :style="`width: ${(remaining / total) * 100}%`"></div>
             </div>
 
-            <div class="rounded-xl border border-gray-100 bg-white p-6">
-                <p class="text-xs uppercase tracking-wide text-gray-400 mb-2">Which pattern?</p>
-                <p class="text-lg text-gray-900">{{ $item->prompt }}</p>
+            <div class="rounded-xl border border-border bg-surface p-6">
+                <p class="text-xs uppercase tracking-wide text-subtle mb-2">Which pattern?</p>
+                <p class="text-lg text-fg">{{ $item->prompt }}</p>
             </div>
 
             <div class="mt-4 grid gap-2 sm:grid-cols-2">
                 @foreach ($item->choices as $choice)
                     <button type="button" @click="pick(@js($choice))"
-                            class="rounded-lg border border-gray-200 bg-white px-4 py-3 text-left text-gray-800 hover:border-indigo-400 hover:bg-indigo-50">
+                            class="rounded-lg border border-border bg-surface px-4 py-3 text-left text-fg hover:border-primary hover:bg-surface-sunken">
                         {{ $choice }}
                     </button>
                 @endforeach
@@ -70,67 +82,86 @@
 
     {{-- FEEDBACK ------------------------------------------------------------}}
     @elseif ($phase === 'feedback' && $feedback && $item)
-        <div class="flex items-center justify-between text-xs text-gray-500 mb-2">
+        <div class="flex items-center justify-between text-xs text-muted mb-2">
             <span>Round {{ $round }} / {{ $rounds }}</span>
         </div>
 
         @php($ok = $feedback['correct'])
-        <div class="rounded-xl border p-6 {{ $ok ? 'border-emerald-200 bg-emerald-50/50' : 'border-rose-200 bg-rose-50/50' }}">
-            <div class="text-sm font-semibold {{ $ok ? 'text-emerald-700' : 'text-rose-700' }}">
+        <div class="rounded-xl border p-6 {{ $ok ? 'border-success bg-success-subtle/50' : 'border-danger bg-danger-subtle/50' }}">
+            <div class="text-sm font-semibold {{ $ok ? 'text-success-fg' : 'text-danger-fg' }}">
                 @if ($ok) ✓ Correct
                 @elseif (is_null($feedback['selected'])) ⏱ Time up — it was {{ $feedback['answer'] }}
                 @else ✗ Not quite — you chose {{ $feedback['selected'] }}
                 @endif
             </div>
-            <p class="mt-1 text-gray-900 font-medium">{{ $item->prompt }}</p>
-            <p class="mt-2 text-sm"><span class="text-gray-500">Answer:</span> <span class="font-semibold text-gray-900">{{ $feedback['answer'] }}</span></p>
+            <p class="mt-1 text-fg font-medium">{{ $item->prompt }}</p>
+            <p class="mt-2 text-sm"><span class="text-muted">Answer:</span> <span class="font-semibold text-fg">{{ $feedback['answer'] }}</span></p>
             @if ($feedback['explanation'])
-                <p class="mt-2 text-sm text-gray-700">{{ $feedback['explanation'] }}</p>
+                <p class="mt-2 text-sm text-muted">{{ $feedback['explanation'] }}</p>
             @endif
             @if ($feedback['detail'])
-                <p class="mt-2 text-sm text-gray-500 border-l-2 border-gray-200 pl-3">{{ $feedback['detail'] }}</p>
+                <p class="mt-2 text-sm text-muted border-l-2 border-border pl-3">{{ $feedback['detail'] }}</p>
             @endif
         </div>
 
         <button wire:click="next"
-                class="mt-4 w-full rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500">
+                class="mt-4 w-full rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-fg hover:bg-primary-hover">
             {{ $round >= $rounds ? 'See summary' : 'Next round' }}
         </button>
 
     {{-- SUMMARY -------------------------------------------------------------}}
     @elseif ($phase === 'summary' && $summary)
         @php($s = $summary['session'])
-        <div class="rounded-xl border border-gray-100 bg-white p-6 text-center">
-            <h1 class="text-xl font-bold tracking-tight">
+        <div class="rounded-xl border border-border bg-surface p-6 text-center">
+            <h1 class="font-serif text-2xl font-semibold tracking-tight text-fg">
                 {{ $summary['passed'] ? 'Session complete — reflex is stabilizing.' : 'Session complete — keep drilling.' }}
             </h1>
 
             <div class="mt-5 grid grid-cols-3 gap-3 text-center">
-                <div class="rounded-lg bg-gray-50 p-3">
-                    <div class="text-2xl font-bold {{ $summary['passed'] ? 'text-emerald-600' : 'text-gray-900' }}">{{ round($s->accuracy * 100) }}%</div>
-                    <div class="text-xs text-gray-500">{{ $s->correct }}/{{ $s->total }} correct</div>
+                <div class="rounded-lg bg-surface-sunken p-3">
+                    <div class="text-2xl font-bold {{ $summary['passed'] ? 'text-success' : 'text-fg' }}">{{ round($s->accuracy * 100) }}%</div>
+                    <div class="text-xs text-muted">{{ $s->correct }}/{{ $s->total }} correct</div>
                 </div>
-                <div class="rounded-lg bg-gray-50 p-3">
-                    <div class="text-2xl font-bold text-gray-900">{{ $s->median_latency_ms ? number_format($s->median_latency_ms / 1000, 1) : '—' }}s</div>
-                    <div class="text-xs text-gray-500">median response</div>
+                <div class="rounded-lg bg-surface-sunken p-3">
+                    <div class="text-2xl font-bold text-fg">{{ $s->median_latency_ms ? number_format($s->median_latency_ms / 1000, 1) : '—' }}s</div>
+                    <div class="text-xs text-muted">median response</div>
                 </div>
-                <div class="rounded-lg bg-gray-50 p-3">
-                    <div class="text-2xl font-bold text-indigo-600">{{ $s->stage_code ?? '—' }}</div>
-                    <div class="text-xs text-gray-500">{{ $summary['stageLabel'] ?? 'stage' }}</div>
+                <div class="rounded-lg bg-surface-sunken p-3">
+                    <div class="text-2xl font-bold text-primary">L{{ $summary['level'] }}</div>
+                    <div class="text-xs text-muted">{{ $summary['rung']['name'] }}</div>
                 </div>
             </div>
 
+            {{-- Red Queen Knowledge Ladder read for this session. --}}
+            <div class="mt-5 text-left">
+                <div class="mb-2 flex items-baseline justify-between gap-2">
+                    <p class="text-sm text-fg">
+                        <span class="font-semibold">Level {{ $summary['level'] }} · {{ $summary['rung']['name'] }}</span>
+                        <span class="text-muted">— {{ $summary['rung']['standard'] }}</span>
+                    </p>
+                    <a href="{{ route('wiki.show', 'red-queen-knowledge-ladder') }}" class="shrink-0 text-xs text-primary hover:underline">ladder →</a>
+                </div>
+                <x-knowledge-ladder :ladder="$ladder" :current="$summary['level']" :ceiling="$gymCeiling" />
+                @if ($summary['nextRung'])
+                    <p class="mt-2 text-xs text-muted">
+                        Next rung: <span class="font-medium text-fg">Level {{ $summary['nextRung']['level'] }} · {{ $summary['nextRung']['name'] }}</span> — {{ $summary['nextRung']['standard'] }}
+                    </p>
+                @else
+                    <p class="mt-2 text-xs text-muted">Top rung this gym trains — deeper mastery (transfer, teaching) lives beyond timed drills.</p>
+                @endif
+            </div>
+
             @if ($summary['confusion'])
-                <p class="mt-4 text-sm text-gray-600">
-                    Most confused: <span class="font-medium text-rose-700">{{ $summary['confusion']['pair'] }}</span>
-                    <span class="text-gray-400">(×{{ $summary['confusion']['count'] }})</span>
+                <p class="mt-4 text-sm text-muted">
+                    Most confused: <span class="font-medium text-danger-fg">{{ $summary['confusion']['pair'] }}</span>
+                    <span class="text-subtle">(×{{ $summary['confusion']['count'] }})</span>
                 </p>
             @endif
 
             <div class="mt-6 flex items-center justify-center gap-3">
-                <button wire:click="start" class="rounded-md bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-500">Play again</button>
+                <button wire:click="start" class="rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-fg hover:bg-primary-hover">Play again</button>
                 @if ($gym->course)
-                    <a href="{{ route('courses.show', $gym->course->slug) }}" class="rounded-md border border-gray-200 px-5 py-2 text-sm text-gray-700 hover:bg-gray-50">Back to course</a>
+                    <a href="{{ route('courses.show', $gym->course->slug) }}" class="rounded-md border border-border px-5 py-2 text-sm text-fg hover:bg-surface-sunken">Back to course</a>
                 @endif
             </div>
         </div>

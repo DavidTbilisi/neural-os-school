@@ -90,6 +90,51 @@
                 </div>
             @endif
 
+            {{-- Accuracy by gym (Apache ECharts) ------------------------------}}
+            @php
+                $chartRows = collect($report['performance'] ?? [])->reject(fn ($p) => $p['insufficient']);
+            @endphp
+            @if ($chartRows->isNotEmpty())
+                <div class="bg-white shadow-sm sm:rounded-lg p-6">
+                    <h3 class="font-semibold text-gray-900 mb-1">Accuracy by gym</h3>
+                    <p class="text-xs text-gray-500 mb-4">Current accuracy vs. promote target, rendered with Apache ECharts.</p>
+                    <x-echart
+                        :height="max(160, $chartRows->count() * 48 + 40) . 'px'"
+                        :option="[
+                            'grid' => ['left' => 8, 'right' => 40, 'top' => 10, 'bottom' => 8, 'containLabel' => true],
+                            'tooltip' => ['trigger' => 'axis', 'axisPointer' => ['type' => 'shadow']],
+                            'xAxis' => [
+                                'type' => 'value',
+                                'max' => 100,
+                                'axisLabel' => ['formatter' => '{value}%'],
+                                'splitLine' => ['lineStyle' => ['color' => '#f1f5f9']],
+                            ],
+                            'yAxis' => [
+                                'type' => 'category',
+                                'data' => $chartRows->pluck('title')->all(),
+                                'axisTick' => ['show' => false],
+                            ],
+                            'series' => [
+                                [
+                                    'name' => 'Accuracy',
+                                    'type' => 'bar',
+                                    'data' => $chartRows->map(fn ($p) => round($p['accuracy'] * 100))->all(),
+                                    'barMaxWidth' => 22,
+                                    'itemStyle' => ['color' => '#6366f1', 'borderRadius' => [0, 4, 4, 0]],
+                                    'label' => ['show' => true, 'position' => 'right', 'formatter' => '{c}%'],
+                                    'markLine' => [
+                                        'symbol' => 'none',
+                                        'lineStyle' => ['type' => 'dashed', 'color' => '#f59e0b'],
+                                        'label' => ['formatter' => 'target', 'position' => 'insideEndTop', 'color' => '#b45309'],
+                                        'data' => [['xAxis' => round($chartRows->avg('target') * 100)]],
+                                    ],
+                                ],
+                            ],
+                        ]"
+                    />
+                </div>
+            @endif
+
             {{-- Retrieval / courses -------------------------------------------}}
             @php($r = $report['retrieval'])
             @if (! empty($r['courses']))

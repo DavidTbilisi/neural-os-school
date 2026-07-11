@@ -15,8 +15,9 @@ use Illuminate\Support\Facades\DB;
  *
  *   ./run php artisan db:seed --class=GymSeeder
  *
- * Idempotent: the gym row is upserted (sessions/telemetry preserved); items are
- * rebuilt.
+ * Idempotent and non-destructive: the gym row is upserted and items are upserted
+ * by `sort` (IDs preserved, so existing sessions/attempts stay valid); only tail
+ * items are removed if the curriculum shrinks.
  */
 class GymSeeder extends Seeder
 {
@@ -43,28 +44,33 @@ class GymSeeder extends Seeder
                 'latency_target_ms' => 6000,
                 'pass_accuracy' => 0.80,
                 'promote_accuracy' => 0.85,
-                'stages' => [
-                    ['code' => 'S5', 'label' => 'Reflex', 'min_accuracy' => 0.90, 'max_latency_ms' => 4000],
-                    ['code' => 'S4', 'label' => 'Fast Recognizer', 'min_accuracy' => 0.85, 'max_latency_ms' => 6000],
-                    ['code' => 'S3', 'label' => 'Recognizer', 'min_accuracy' => 0.80, 'max_latency_ms' => 9000],
-                    ['code' => 'S2', 'label' => 'Pattern Builder', 'min_accuracy' => 0.60, 'max_latency_ms' => null],
-                    ['code' => 'S1', 'label' => 'Prototype Reader', 'min_accuracy' => 0.0, 'max_latency_ms' => null],
-                ],
+                // Levels come from the Red Queen Knowledge Ladder (0–9), computed
+                // by App\Support\KnowledgeLadder from pass/promote/latency above —
+                // no per-gym stage ladder to maintain. The old ad-hoc `stages`
+                // JSON (S1–S5) is retired; null it so re-seeding clears stale data.
+                'stages' => null,
                 'status' => Gym::STATUS_PUBLISHED,
                 'source' => 'gyms/algorithm-pattern-gym.html (Neural-OS-Research wiki)',
             ]);
 
-            $gym->items()->delete();
-            foreach ($this->items() as $i => $item) {
-                $gym->items()->create([
-                    'prompt' => $item[0],
-                    'correct' => $item[1],
-                    'choices' => $item[2],
-                    'explanation' => $item[3],
-                    'detail' => $item[4],
-                    'sort' => $i,
-                ]);
+            // Upsert items by their stable position (sort) rather than delete-all,
+            // so item IDs survive a re-seed and existing attempts keep referencing
+            // the right prompt. `sort` is the natural key within a gym.
+            $items = $this->items();
+            foreach ($items as $i => $item) {
+                $gym->items()->updateOrCreate(
+                    ['sort' => $i],
+                    [
+                        'prompt' => $item[0],
+                        'correct' => $item[1],
+                        'choices' => $item[2],
+                        'explanation' => $item[3],
+                        'detail' => $item[4],
+                    ],
+                );
             }
+            // Drop only the tail if the curriculum shrank (positions no longer present).
+            $gym->items()->where('sort', '>=', count($items))->delete();
 
             $this->command?->info('Seeded gym "'.self::SLUG.'": '.$gym->items()->count().' items'
                 .($course ? " (linked to course '{$course->slug}')" : ' (no DSA course found to link)'));

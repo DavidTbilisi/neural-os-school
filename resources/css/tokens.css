@@ -1,0 +1,323 @@
+/* ============================================================================
+   Neural OS School — Design Tokens
+   Philosophy: Bookish / Reading Room — a well-typeset paperback + a quiet
+   library. Warm paper & ink, oxblood accent, serif voice (display · headings ·
+   reading), comfortable reading-room density. Muted "printed-plate" status
+   colors, not neon SaaS.
+
+   Colors are space-separated RGB *channels* so Tailwind's
+   `rgb(var(--x) / <alpha-value>)` works. Full-value tokens (shadows, overlay)
+   are stored ready-to-use.
+
+   Dark mode is AUTHORED (a warm, dim reading lamp — not a cool inversion).
+   Keys on `.dark` (Tailwind `darkMode:'class'` + Filament v3's `.dark`), with a
+   `[data-theme]` alias and a `prefers-color-scheme` fallback.
+   ========================================================================== */
+
+:root {
+  /* --- Brand / primary (oxblood — leather-bound red) --------------------- */
+  --color-primary:            139 46 60;    /* #8B2E3C — fill behind warm-white text (AAA ~8:1) */
+  --color-primary-hover:      114 36 47;    /* #72242F */
+  --color-primary-active:     92 28 38;     /* #5C1C26 */
+  --color-primary-fg:         251 248 241;  /* #FBF8F1 warm white on oxblood */
+  --color-primary-subtle:     243 226 226;  /* #F3E2E2 — blush tint on paper (selected/active) */
+  --color-primary-subtle-fg:  114 36 47;    /* #72242F — deep oxblood text on subtle (~9:1) */
+
+  /* --- Surfaces: warm paper, low→high elevation ------------------------- */
+  --color-bg:              245 240 230;  /* #F5F0E6 — aged-paper canvas */
+  --color-surface:         252 250 244;  /* #FCFAF4 — cleaner paper cards */
+  --color-surface-raised:  253 251 247;  /* #FDFBF7 — modals/popovers (+ --shadow-lg) */
+  --color-surface-sunken:  236 229 214;  /* #ECE5D6 — inputs, wells, code */
+  --color-surface-inverse: 43 38 32;     /* #2B2620 — warm-ink chips/tooltips */
+
+  /* --- Foreground: warm ink -------------------------------------------- */
+  --color-fg:         43 38 32;    /* #2B2620 — ink (~13:1) */
+  --color-fg-muted:   99 88 74;    /* #63584A — secondary taupe (~6:1) */
+  --color-fg-subtle:  138 125 105; /* #8A7D69 — placeholder/disabled (UI 3:1; not body text) */
+  --color-fg-inverse: 245 240 230; /* #F5F0E6 — text on inverse/primary */
+  --color-fg-link:    139 46 60;   /* #8B2E3C — oxblood links in prose (AAA ~7:1) */
+
+  /* --- Borders: warm hairlines ----------------------------------------- */
+  --color-border:        227 218 200; /* #E3DAC8 */
+  --color-border-subtle: 237 230 216; /* #EDE6D8 — dividers */
+  --color-border-strong: 207 195 171; /* #CFC3AB — hover/emphasized */
+  --color-ring:          176 68 80;   /* #B04450 — oxblood focus ring */
+
+  /* --- Status: muted, printed (not neon) -------------------------------- */
+  /* success — botanical green */
+  --color-success:        92 122 69;   /* #5C7A45 */
+  --color-success-subtle: 233 237 217; /* #E9EDD9 */
+  --color-success-fg:     62 90 44;    /* #3E5A2C — text (~6:1) */
+
+  /* warning — ochre / mustard */
+  --color-warning:        184 132 43;  /* #B8842B */
+  --color-warning-subtle: 245 233 206; /* #F5E9CE */
+  --color-warning-fg:     138 93 26;   /* #8A5D1A — text (AA) */
+
+  /* danger — vermilion/brick (hotter & more orange than oxblood, so distinct) */
+  --color-danger:        192 57 43;   /* #C0392B */
+  --color-danger-subtle: 247 225 220; /* #F7E1DC */
+  --color-danger-fg:     154 42 32;   /* #9A2A20 — text (~6:1) */
+
+  /* info — muted prussian/steel blue */
+  --color-info:        58 107 138;  /* #3A6B8A */
+  --color-info-subtle: 222 233 239; /* #DEE9EF */
+  --color-info-fg:     42 80 105;   /* #2A5069 — text (~6:1) */
+
+  /* --- Full-value tokens (warm-tinted) --------------------------------- */
+  --color-overlay: rgba(43, 38, 32, 0.40);
+
+  --shadow-sm:    0 1px 2px 0 rgba(59, 47, 28, 0.06);
+  --shadow-md:    0 2px 6px -1px rgba(59, 47, 28, 0.09), 0 1px 2px -1px rgba(59, 47, 28, 0.06);
+  --shadow-lg:    0 10px 30px -6px rgba(45, 35, 20, 0.16), 0 3px 8px -3px rgba(45, 35, 20, 0.10);
+  --shadow-focus: 0 0 0 3px rgba(139, 46, 60, 0.35);
+
+  /* --- Typography ------------------------------------------------------- */
+  /* Serif = display · headings · reading (the book voice).
+     Sans  = UI chrome · labels · data. Mono = code/telemetry. */
+  --font-serif: "Newsreader", ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  --font-sans:  "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono:  "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --font-display: var(--font-serif);
+
+  /* Comfortable reading-room ramp */
+  --font-size-xs:   0.75rem;    /* 12 — captions, badges */
+  --font-size-sm:   0.8125rem;  /* 13 — compact labels/metadata */
+  --font-size-base: 0.9375rem;  /* 15 — UI body (relaxed) */
+  --font-size-md:   1rem;       /* 16 */
+  --font-size-lg:   1.125rem;   /* 18 — reading-column body (serif) */
+  --font-size-xl:   1.375rem;   /* 22 */
+  --font-size-2xl:  1.75rem;    /* 28 */
+  --font-size-3xl:  2.25rem;    /* 36 */
+  --font-size-4xl:  3rem;       /* 48 — serif display */
+
+  --font-weight-normal:   400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+
+  --line-height-tight:   1.15;  /* display */
+  --line-height-snug:    1.3;
+  --line-height-normal:  1.55;  /* UI body (relaxed) */
+  --line-height-relaxed: 1.75;  /* reading prose */
+
+  --letter-spacing-tight:  -0.01em; /* serif display */
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide:   0.02em;
+  --letter-spacing-wider:  0.08em;  /* small all-caps labels */
+
+  /* --- Space (4px base). Portable mirror of Tailwind's scale; Tailwind's
+         numeric spacing is left intact for backward compatibility. --------- */
+  --space-0:  0;
+  --space-1:  0.125rem; /* 2 */
+  --space-2:  0.25rem;  /* 4 */
+  --space-3:  0.375rem; /* 6 */
+  --space-4:  0.5rem;   /* 8 */
+  --space-5:  0.75rem;  /* 12 */
+  --space-6:  1rem;     /* 16 */
+  --space-7:  1.5rem;   /* 24 */
+  --space-8:  2rem;     /* 32 */
+  --space-9:  3rem;     /* 48 */
+  --space-10: 4rem;     /* 64 */
+  --space-11: 6rem;     /* 96 */
+  --space-12: 8rem;     /* 128 */
+
+  /* --- Layout ---------------------------------------------------------- */
+  --max-w-prose: 66ch;   /* reading measure (serif @ 18px) */
+  --max-w-wide:  60rem;  /* 960 — app content shell */
+  --max-w-page:  78rem;  /* 1248 — dashboard/wide */
+
+  /* --- Radius (softened a touch for reading-room warmth) --------------- */
+  --radius-sm:   0.25rem;   /* 4 — inputs */
+  --radius-md:   0.375rem;  /* 6 — buttons */
+  --radius-lg:   0.625rem;  /* 10 — cards */
+  --radius-xl:   0.875rem;  /* 14 — panels */
+  --radius-full: 9999px;
+
+  /* --- Motion (gentle & calm) ------------------------------------------ */
+  --duration-instant: 60ms;
+  --duration-fast:    140ms;
+  --duration-normal:  220ms;
+  --duration-slow:    360ms;
+  --duration-slower:  520ms;
+
+  --easing-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --easing-in:      cubic-bezier(0.4, 0, 1, 1);
+  --easing-out:     cubic-bezier(0, 0, 0.2, 1);
+  --easing-emphatic: cubic-bezier(0.34, 1.56, 0.64, 1); /* overshoot — use rarely, never on chrome */
+
+  /* --- Breakpoints (reference; Tailwind defaults kept to avoid breakage) */
+  --breakpoint-sm:  640px;
+  --breakpoint-md:  768px;
+  --breakpoint-lg:  1024px;
+  --breakpoint-xl:  1280px;
+  --breakpoint-2xl: 1536px;
+}
+
+/* ============================================================================
+   DARK MODE — "study at night": warm charcoal, candlelit off-white ink,
+   lifted oxblood. Surface-lightening elevation ladder.
+   ========================================================================== */
+:root.dark,
+:root[data-theme="dark"] {
+  /* Brand — oxblood lifted for dark canvas (white text still AA) */
+  --color-primary:            154 54 68;    /* #9A3644 */
+  --color-primary-hover:      176 66 79;    /* #B0424F */
+  --color-primary-active:     197 81 96;    /* #C55160 */
+  --color-primary-fg:         251 248 241;  /* #FBF8F1 */
+  --color-primary-subtle:     58 29 34;     /* #3A1D22 — deep wine tint */
+  --color-primary-subtle-fg:  231 167 173;  /* #E7A7AD — light rose */
+
+  /* Surfaces (each step lighter = higher elevation) */
+  --color-bg:              26 23 18;    /* #1A1712 — warm near-black */
+  --color-surface:         35 32 25;    /* #232019 — cards */
+  --color-surface-raised:  44 40 32;    /* #2C2820 — modals/popovers */
+  --color-surface-sunken:  19 16 9;     /* #131009 — inputs/wells/code */
+  --color-surface-inverse: 245 240 230; /* #F5F0E6 — rare light surface */
+
+  /* Foreground — candlelit warm off-white (not pure white) */
+  --color-fg:         236 228 211; /* #ECE4D3 (~14:1) */
+  --color-fg-muted:   169 155 132; /* #A99B84 (~6.6:1) */
+  --color-fg-subtle:  139 126 108; /* #8B7E6C (~4.5:1) */
+  --color-fg-inverse: 43 38 32;    /* #2B2620 */
+  --color-fg-link:    217 138 143; /* #D98A8F — clay-rose links (~6.8:1) */
+
+  /* Borders */
+  --color-border:        56 50 42;  /* #38322A */
+  --color-border-subtle: 41 36 29;  /* #29241D */
+  --color-border-strong: 78 70 58;  /* #4E463A */
+  --color-ring:          176 66 79; /* #B0424F — visible on dark */
+
+  /* Status (muted, lifted for dark) */
+  --color-success:        127 163 95;  /* #7FA35F */
+  --color-success-subtle: 35 43 24;    /* #232B18 */
+  --color-success-fg:     183 206 150; /* #B7CE96 */
+
+  --color-warning:        217 164 65;  /* #D9A441 */
+  --color-warning-subtle: 46 36 16;    /* #2E2410 */
+  --color-warning-fg:     234 199 126; /* #EAC77E */
+
+  --color-danger:        217 89 75;   /* #D9594B */
+  --color-danger-subtle: 51 21 18;    /* #331512 */
+  --color-danger-fg:     240 167 156; /* #F0A79C */
+
+  --color-info:        111 160 190; /* #6FA0BE */
+  --color-info-subtle: 22 36 44;    /* #16242C */
+  --color-info-fg:     169 203 221; /* #A9CBDD */
+
+  /* Full-value tokens — warm, deep shadows; elevation reads via surface color */
+  --color-overlay: rgba(15, 11, 6, 0.68);
+
+  --shadow-sm:    0 1px 2px 0 rgba(0, 0, 0, 0.45);
+  --shadow-md:    0 2px 6px -1px rgba(0, 0, 0, 0.55);
+  --shadow-lg:    0 12px 32px -8px rgba(0, 0, 0, 0.65);
+  --shadow-focus: 0 0 0 3px rgba(197, 81, 96, 0.40);
+}
+
+/* System-preference dark, UNLESS the user explicitly chose light */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light):not([data-theme="light"]) {
+    --color-primary: 154 54 68;
+    --color-primary-hover: 176 66 79;
+    --color-primary-active: 197 81 96;
+    --color-primary-subtle: 58 29 34;
+    --color-primary-subtle-fg: 231 167 173;
+
+    --color-bg: 26 23 18;
+    --color-surface: 35 32 25;
+    --color-surface-raised: 44 40 32;
+    --color-surface-sunken: 19 16 9;
+    --color-surface-inverse: 245 240 230;
+
+    --color-fg: 236 228 211;
+    --color-fg-muted: 169 155 132;
+    --color-fg-subtle: 139 126 108;
+    --color-fg-inverse: 43 38 32;
+    --color-fg-link: 217 138 143;
+
+    --color-border: 56 50 42;
+    --color-border-subtle: 41 36 29;
+    --color-border-strong: 78 70 58;
+    --color-ring: 176 66 79;
+
+    --color-success: 127 163 95;
+    --color-success-subtle: 35 43 24;
+    --color-success-fg: 183 206 150;
+    --color-warning: 217 164 65;
+    --color-warning-subtle: 46 36 16;
+    --color-warning-fg: 234 199 126;
+    --color-danger: 217 89 75;
+    --color-danger-subtle: 51 21 18;
+    --color-danger-fg: 240 167 156;
+    --color-info: 111 160 190;
+    --color-info-subtle: 22 36 44;
+    --color-info-fg: 169 203 221;
+
+    --color-overlay: rgba(15, 11, 6, 0.68);
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.45);
+    --shadow-md: 0 2px 6px -1px rgba(0, 0, 0, 0.55);
+    --shadow-lg: 0 12px 32px -8px rgba(0, 0, 0, 0.65);
+    --shadow-focus: 0 0 0 3px rgba(197, 81, 96, 0.40);
+  }
+}
+
+/* ============================================================================
+   Base layer — apply the system to the document.
+   ========================================================================== */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    color-scheme: light dark;
+  }
+
+  body {
+    background-color: rgb(var(--color-bg));
+    color: rgb(var(--color-fg));
+    font-family: var(--font-sans);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-normal);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Bookish default: headings speak in the serif voice */
+  h1, h2, h3, h4 {
+    font-family: var(--font-serif);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: var(--letter-spacing-tight);
+    line-height: var(--line-height-tight);
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--color-ring));
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: rgb(var(--color-primary) / 0.20);
+  }
+
+  /* The reading column: serif, generous measure, relaxed leading.
+     Apply `.reading` (or Tailwind `prose` styled via these vars) to wiki pages. */
+  .reading {
+    font-family: var(--font-serif);
+    font-size: var(--font-size-lg);
+    line-height: var(--line-height-relaxed);
+    max-width: var(--max-w-prose);
+    color: rgb(var(--color-fg));
+  }
+  .reading a { color: rgb(var(--color-fg-link)); text-underline-offset: 0.15em; }
+  .reading code, .reading pre {
+    font-family: var(--font-mono);
+    background-color: rgb(var(--color-surface-sunken));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

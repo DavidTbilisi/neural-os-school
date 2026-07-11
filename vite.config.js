@@ -7,7 +7,9 @@ export default defineConfig({
         laravel({
             input: [
                 'resources/css/app.css',
+                'resources/css/filament/admin/theme.css',
                 'resources/js/app.js',
+                'resources/js/echarts.js',
                 'resources/js/sketchpad.jsx',
             ],
             refresh: true,

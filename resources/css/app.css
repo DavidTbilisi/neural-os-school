@@ -1,3 +1,44 @@
+@import './tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ---------------------------------------------------------------------------
+   Wiki reader figures — live diagrams rendered from ```chart / ```mermaid
+   fenced blocks (App\Services\Wiki\WikiFencedCodeRenderer). Placed after the
+   Tailwind layers so these override the Typography plugin's <pre> styling.
+   --------------------------------------------------------------------------- */
+.wiki-figure {
+    margin: 1.75rem 0;
+}
+
+.wiki-chart {
+    width: 100%;
+}
+
+.wiki-chart-error {
+    border: 1px solid rgb(var(--color-danger));
+    color: rgb(var(--color-danger-fg));
+    background-color: rgb(var(--color-danger-subtle));
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1rem;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+}
+
+/* Mermaid: a clean, centered figure — strip the code-block chrome prose adds. */
+.prose pre.mermaid {
+    margin: 1.75rem 0;
+    display: flex;
+    justify-content: center;
+    background-color: transparent;
+    border: 0;
+    padding: 0;
+    overflow-x: auto;
+    color: rgb(var(--color-fg));
+}
+.prose pre.mermaid svg {
+    max-width: 100%;
+    height: auto;
+}

@@ -4,7 +4,11 @@ namespace App\Services\Wiki;
 
 use App\Models\Page;
 use App\Support\Slug;
-use League\CommonMark\GithubFlavoredMarkdownConverter;
+use League\CommonMark\Environment\Environment;
+use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
+use League\CommonMark\Extension\CommonMark\Node\Block\FencedCode;
+use League\CommonMark\Extension\GithubFlavoredMarkdownExtension;
+use League\CommonMark\MarkdownConverter;
 
 /**
  * Renders a wiki page's markdown to safe HTML for the public reader:
@@ -83,11 +87,17 @@ class WikiRenderer
 
     private function toHtml(string $md): string
     {
-        $converter = new GithubFlavoredMarkdownConverter([
+        $environment = new Environment([
             'html_input' => 'escape',
             'allow_unsafe_links' => false,
         ]);
+        $environment->addExtension(new CommonMarkCoreExtension());
+        $environment->addExtension(new GithubFlavoredMarkdownExtension());
 
-        return (string) $converter->convert($md);
+        // Upgrade ```chart / ```mermaid fences to live diagrams; higher priority
+        // than the core fenced-code renderer so it wins for those info-strings.
+        $environment->addRenderer(FencedCode::class, new WikiFencedCodeRenderer(), 10);
+
+        return (string) (new MarkdownConverter($environment))->convert($md);
     }
 }

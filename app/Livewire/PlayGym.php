@@ -142,7 +142,8 @@ class PlayGym extends Component
             'correct' => $correct,
             'accuracy' => $accuracy,
             'median_latency_ms' => $median,
-            'stage_code' => $this->gym->stageFor($accuracy, $median),
+            // Store the Red Queen Knowledge Ladder rung (0–9) as "L{n}".
+            'stage_code' => 'L'.$this->gym->knowledgeLevelFor($accuracy, $median),
         ]);
 
         Meter::gymSession($session); // emit the METER session-summary event
@@ -165,12 +166,15 @@ class PlayGym extends Component
         $summary = null;
         if ($this->phase === 'summary' && $this->sessionId) {
             $session = $this->session();
-            $stageLabel = collect($this->gym->stages ?? [])
-                ->firstWhere('code', $session->stage_code)['label'] ?? null;
+            $level = (int) ltrim((string) $session->stage_code, 'L');
+            $rung = \App\Support\KnowledgeLadder::rung($level);
 
             $summary = [
                 'session' => $session,
-                'stageLabel' => $stageLabel,
+                'level' => $level,
+                'rung' => $rung,
+                'nextRung' => \App\Support\KnowledgeLadder::next($level),
+                'ladder' => \App\Support\KnowledgeLadder::all(),
                 'confusion' => $this->topConfusion($session),
                 'passed' => $session->accuracy >= $this->gym->pass_accuracy,
             ];
@@ -181,6 +185,8 @@ class PlayGym extends Component
             'round' => $this->index + 1,
             'rounds' => count($this->order),
             'summary' => $summary,
+            'ladder' => \App\Support\KnowledgeLadder::all(),
+            'gymCeiling' => \App\Support\KnowledgeLadder::GYM_CEILING,
         ]);
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\KnowledgeLadder;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -61,25 +62,13 @@ class Gym extends Model
     }
 
     /**
-     * The stage read for a completed session: the highest stage whose accuracy
-     * and latency thresholds are met. Stages are ordered strongest-first in the
-     * spec; returns the stage `code`, or null if none/no stages defined.
+     * The learner's rung on the Red Queen Knowledge Ladder (0–9) for a completed
+     * session. Replaces the old ad-hoc per-gym `stages`: the level is derived
+     * from this gym's pass/promote/latency targets via App\Support\KnowledgeLadder.
      */
-    public function stageFor(float $accuracy, ?int $medianLatencyMs): ?string
+    public function knowledgeLevelFor(float $accuracy, ?int $medianLatencyMs): int
     {
-        foreach (($this->stages ?? []) as $stage) {
-            $minAcc = (float) ($stage['min_accuracy'] ?? 0);
-            $maxLat = $stage['max_latency_ms'] ?? null;
-
-            $accOk = $accuracy >= $minAcc;
-            $latOk = $maxLat === null || ($medianLatencyMs !== null && $medianLatencyMs <= $maxLat);
-
-            if ($accOk && $latOk) {
-                return $stage['code'] ?? null;
-            }
-        }
-
-        return null;
+        return KnowledgeLadder::levelForGym($this, $accuracy, $medianLatencyMs);
     }
 
     /** Median of a list of latency values (ms), or null when empty. */

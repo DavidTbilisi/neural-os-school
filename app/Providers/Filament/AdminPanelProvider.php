@@ -10,12 +10,16 @@ use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Filament\Widgets;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
@@ -27,9 +31,16 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            // Shared design system: oxblood primary + warm Stone gray, Figtree UI,
+            // and the custom theme that remaps Filament onto tokens.css (see
+            // resources/css/filament/admin/theme.css). Amber is demoted to a
+            // semantic accent, applied per-component where needed.
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::hex('#8B2E3C'),
+                'gray' => Color::Stone,
             ])
+            ->font('Figtree')
+            ->viteTheme('resources/css/filament/admin/theme.css')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
@@ -40,6 +51,12 @@ class AdminPanelProvider extends PanelProvider
                 Widgets\AccountWidget::class,
                 Widgets\FilamentInfoWidget::class,
             ])
+            // Load Apache ECharts (the same Vite-built module the front-end uses)
+            // into every panel page, so EChartWidget-based widgets can render.
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): Htmlable => new HtmlString(Blade::render("@vite('resources/js/echarts.js')")),
+            )
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
