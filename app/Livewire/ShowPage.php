@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Course;
 use App\Models\Link;
 use App\Models\Page;
+use App\Services\Wiki\RepresentationBuilder;
 use App\Services\Wiki\WikiRenderer;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Layout;
@@ -53,8 +54,12 @@ class ShowPage extends Component
             ->get(['id', 'slug', 'title']);
     }
 
-    public function render()
+    public function render(RepresentationBuilder $representations)
     {
-        return view('livewire.show-page');
+        // Derived + static per page, so it is built here (not held in Livewire
+        // state) to keep the large echarts option out of every request snapshot.
+        return view('livewire.show-page', [
+            'reps' => $representations->for($this->page),
+        ]);
     }
 }

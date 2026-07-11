@@ -44,6 +44,33 @@ class PageResource extends Resource
                         ->native(false),
                 ]),
 
+            Forms\Components\Section::make('Illustration — frozen scene')
+                ->description('Curated here, NOT from markdown (so it survives re-import). One image that freezes the whole note; renders as the “Frozen scene” representation on the page. Leave the title blank to fall back to the auto-derived scene.')
+                ->collapsed()
+                ->schema([
+                    Forms\Components\TextInput::make('scene_json.title')
+                        ->label('Scene title')
+                        ->placeholder('e.g. The fragile bridge')
+                        ->maxLength(80),
+                    Forms\Components\Textarea::make('scene_json.caption')
+                        ->label('Caption')
+                        ->rows(2)
+                        ->maxLength(400),
+                    Forms\Components\Toggle::make('scene_json.sequence')
+                        ->label('Ordered sequence (draw → arrows between elements)'),
+                    Forms\Components\Repeater::make('scene_json.elements')
+                        ->label('Elements')
+                        ->schema([
+                            Forms\Components\TextInput::make('glyph')->label('Glyph')->placeholder('🌉')->maxLength(8)->columnSpan(1),
+                            Forms\Components\TextInput::make('label')->label('Label')->columnSpan(3),
+                        ])
+                        ->columns(4)
+                        ->reorderable()
+                        ->collapsible()
+                        ->defaultItems(0)
+                        ->addActionLabel('Add element'),
+                ]),
+
             Forms\Components\Section::make('From markdown (read-only)')
                 ->collapsible()
                 ->columns(2)

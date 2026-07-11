@@ -39,3 +39,35 @@ async function renderMermaid() {
 
 document.addEventListener('DOMContentLoaded', renderMermaid);
 document.addEventListener('livewire:navigated', renderMermaid);
+
+/**
+ * Render a mermaid diagram from source into a host element, on demand.
+ *
+ * Mermaid cannot lay out a diagram inside a `display:none` container (it measures
+ * text and collapses to an empty 16×16 SVG). Tabbed UIs must therefore defer
+ * rendering until the panel is actually visible — the representations panel
+ * (resources/views/livewire/partials/representations.blade.php) calls this the
+ * first time its "Structure flow" tab is revealed.
+ */
+window.renderMermaidInto = async (host, src) => {
+    if (!host || host.dataset.rendered) return;
+    host.dataset.rendered = '1';
+    const pre = document.createElement('pre');
+    pre.className = 'mermaid not-prose';
+    pre.textContent = src;
+    host.appendChild(pre);
+
+    const mermaid = await loadMermaid();
+    mermaid.initialize({
+        startOnLoad: false,
+        securityLevel: 'strict',
+        theme: document.documentElement.classList.contains('dark') ? 'dark' : 'neutral',
+        fontFamily: 'inherit',
+    });
+    try {
+        await mermaid.run({ nodes: [pre] });
+    } catch (e) {
+        console.error('[mermaid] on-demand render failed', e);
+        host.dataset.rendered = '';
+    }
+};

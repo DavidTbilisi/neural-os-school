@@ -26,6 +26,7 @@ class Page extends Model
         'axis_clean' => 'boolean',
         'room' => 'integer',
         'level' => 'integer',
+        'scene_json' => 'array',
     ];
 
     public function domain(): BelongsTo

@@ -70,6 +70,10 @@
         </div>
     </article>
 
+    @isset($reps)
+        @include('livewire.partials.representations')
+    @endisset
+
     @if ($backlinks->isNotEmpty())
         <aside class="mt-10 border-t border-border pt-6">
             <h2 class="text-xs font-semibold uppercase tracking-wide text-muted mb-3">

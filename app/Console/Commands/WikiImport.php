@@ -124,7 +124,9 @@ class WikiImport extends Command
         }
 
         // Update everything EXCEPT visibility + created_at so an admin's publish
-        // decisions survive re-imports; new pages insert as private.
+        // decisions survive re-imports; new pages insert as private. `scene_json`
+        // is likewise intentionally omitted — curated scenes are authored in the
+        // admin, not markdown, so they must survive re-import (do NOT add it here).
         $update = ['title', 'rel_path', 'palace', 'level', 'domain_id', 'room', 'para',
             'summary', 'sources', 'last_updated', 'body_md', 'is_meta', 'axis_clean',
             'word_count', 'updated_at'];
