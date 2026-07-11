@@ -25,7 +25,7 @@
                     <h3 class="font-semibold text-gray-900">Today at a glance</h3>
                     <span class="text-xs text-gray-400">{{ now()->format('D, M j') }}</span>
                 </div>
-                @php($g = $report['glance'])
+                @php $g = $report['glance']; @endphp
                 <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
                     <div><div class="text-2xl font-bold text-gray-900">{{ $g['reps'] }}</div><div class="text-xs text-gray-500">gym reps</div></div>
                     <div><div class="text-2xl font-bold text-gray-900">{{ $g['accuracy'] !== null ? round($g['accuracy'] * 100).'%' : '—' }}</div><div class="text-xs text-gray-500">accuracy</div></div>
@@ -136,7 +136,7 @@
             @endif
 
             {{-- Retrieval / courses -------------------------------------------}}
-            @php($r = $report['retrieval'])
+            @php $r = $report['retrieval']; @endphp
             @if (! empty($r['courses']))
                 <div class="bg-white shadow-sm sm:rounded-lg p-6">
                     <div class="flex items-center justify-between mb-4">
@@ -161,7 +161,7 @@
 
             {{-- Totals + Goodhart guard ---------------------------------------}}
             <div class="grid gap-4 sm:grid-cols-4">
-                @php($t = $report['totals'])
+                @php $t = $report['totals']; @endphp
                 <div class="bg-white shadow-sm sm:rounded-lg p-4 text-center"><div class="text-xl font-bold text-gray-900">{{ $t['reps'] }}</div><div class="text-xs text-gray-500">reps ({{ $report['windowDays'] }}d)</div></div>
                 <div class="bg-white shadow-sm sm:rounded-lg p-4 text-center"><div class="text-xl font-bold text-gray-900">{{ $t['sessions'] }}</div><div class="text-xs text-gray-500">sessions</div></div>
                 <div class="bg-white shadow-sm sm:rounded-lg p-4 text-center"><div class="text-xl font-bold text-gray-900">{{ $t['activeDays'] }}</div><div class="text-xs text-gray-500">active days</div></div>
