@@ -21,7 +21,7 @@ use Livewire\Component;
  * (via TracksCourseProgress) — so reading a lesson no longer means leaving
  * the course.
  */
-#[Layout('layouts.public')]
+#[Layout('layouts.public', ['wide' => true])]
 class ShowLesson extends Component
 {
     use ReadsWikiPage, TracksCourseProgress;

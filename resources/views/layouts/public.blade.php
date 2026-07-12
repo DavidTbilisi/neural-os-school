@@ -8,8 +8,10 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-full bg-bg text-fg">
+    @php($containerWidth = ($wide ?? false) ? 'max-w-none' : 'max-w-5xl')
+
     <header class="border-b border-border bg-surface/90 backdrop-blur sticky top-0 z-10">
-        <div class="mx-auto max-w-5xl px-4 h-14 flex items-center gap-6">
+        <div class="mx-auto {{ $containerWidth }} px-4 h-14 flex items-center gap-6">
             <a href="{{ route('library') }}" class="font-semibold tracking-tight text-primary">
                 Neural&nbsp;OS&nbsp;School
             </a>
@@ -32,11 +34,11 @@
         </div>
     </header>
 
-    <main class="mx-auto max-w-5xl px-4 py-8">
+    <main class="mx-auto {{ $containerWidth }} px-4 py-8">
         {{ $slot }}
     </main>
 
-    <footer class="mx-auto max-w-5xl px-4 py-10 text-xs text-subtle">
+    <footer class="mx-auto {{ $containerWidth }} px-4 py-10 text-xs text-subtle">
         Neural OS School — a learning system built from the wiki.
     </footer>
 </body>
