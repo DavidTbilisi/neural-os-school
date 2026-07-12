@@ -10,17 +10,26 @@ use League\CommonMark\Renderer\NodeRendererInterface;
 use League\CommonMark\Util\HtmlElement;
 
 /**
- * Renders fenced code blocks, upgrading two info-strings into live diagrams:
+ * Renders fenced code blocks, upgrading three info-strings into live diagrams:
  *
  *   ```chart   (or ```echarts)  → an ECharts container; the fence body is the
  *                                 ECharts option as JSON. Optional `height=NNN`.
  *   ```mermaid                  → a Mermaid diagram source block.
+ *   ```p5      (or ```sketch)   → a p5.js sketch; the fence body is instance-mode
+ *                                 JS with `p` (the p5 instance) and `el` (the host
+ *                                 element) in scope. Optional `height=NNN`.
  *
  * Every other language falls back to CommonMark's default fenced-code render,
- * so ordinary ``` code blocks (and the ASCII "Visual" blocks) are unchanged.
+ * so ordinary ``` code blocks (and any remaining ASCII blocks) are unchanged.
  *
- * Client side: resources/js/echarts.js auto-mounts `[data-echart]`, and
- * resources/js/wiki-diagrams.js renders `.mermaid` (lazy-loading mermaid).
+ * Client side: resources/js/echarts.js auto-mounts `[data-echart]`,
+ * resources/js/wiki-diagrams.js renders `.mermaid` (lazy-loading mermaid), and
+ * resources/js/p5-sketch.js runs `[data-p5]` sketches (lazy-loading p5).
+ *
+ * SECURITY: a ```p5 block executes its JS in the reader's browser. Wiki content
+ * is first-party authored (imported from the canonical research repo), so this
+ * is the same trust level as an author writing a Mermaid/ECharts block. Never
+ * enable this path for user-submitted content.
  */
 final class WikiFencedCodeRenderer implements NodeRendererInterface
 {
@@ -52,7 +61,34 @@ final class WikiFencedCodeRenderer implements NodeRendererInterface
             );
         }
 
+        if ($lang === 'p5' || $lang === 'sketch') {
+            return $this->sketch($body, $words);
+        }
+
         return $this->default->render($node, $childRenderer);
+    }
+
+    /** Build a p5.js sketch figure. The body is carried in a text/plain script so
+     *  markup in the source can't execute until p5-sketch.js hands it to p5. */
+    private function sketch(string $body, array $words): HtmlElement
+    {
+        $height = '360px';
+        foreach ($words as $w) {
+            if (preg_match('/^height=(\d+)(px|rem|vh)?$/', $w, $m)) {
+                $height = $m[1].(($m[2] ?? '') ?: 'px');
+            }
+        }
+
+        // </script> in author code would close the carrier early — neutralise it.
+        $safe = str_replace('</script', '<\/script', $body);
+        $source = new HtmlElement('script', ['type' => 'text/plain', 'data-p5-src' => ''], $safe, false);
+        $host = new HtmlElement('div', [
+            'class' => 'wiki-sketch not-prose',
+            'data-p5' => '',
+            'style' => 'min-height: '.$height,
+        ], $source);
+
+        return new HtmlElement('figure', ['class' => 'wiki-figure'], $host);
     }
 
     /** Build an ECharts figure — or a visible error note if the JSON is invalid. */
@@ -70,7 +106,7 @@ final class WikiFencedCodeRenderer implements NodeRendererInterface
         $height = '360px';
         foreach ($words as $w) {
             if (preg_match('/^height=(\d+)(px|rem|vh)?$/', $w, $m)) {
-                $height = $m[1].($m[2] ?: 'px');
+                $height = $m[1].(($m[2] ?? '') ?: 'px');
             }
         }
 

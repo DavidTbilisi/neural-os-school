@@ -17,6 +17,19 @@
     width: 100%;
 }
 
+/* p5.js sketches — center the canvas and keep it inside the column. */
+.wiki-sketch {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.wiki-sketch canvas {
+    max-width: 100%;
+    height: auto !important;
+    border-radius: var(--radius-md);
+}
+
 .wiki-chart-error {
     border: 1px solid rgb(var(--color-danger));
     color: rgb(var(--color-danger-fg));
