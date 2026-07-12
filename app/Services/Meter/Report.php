@@ -101,7 +101,7 @@ class Report
                 'medianLatencyMs' => $median,
                 'target' => $target,
                 'floor' => $floor,
-                'verdict' => $this->verdict($n, $accuracy, $target, $working, $floor),
+                'verdict' => self::verdict($n, $accuracy, $target, $working, $floor),
                 'latencyRead' => $this->latencyRead($median, $gym?->latency_target_ms),
                 'stage' => optional($sessions->get($slug)?->sortBy('occurred_at')->last())->context['stage_code'] ?? null,
                 'trend' => $sessionAcc->map(fn ($v) => (int) round($v * 100))->values()->all(),
@@ -111,7 +111,7 @@ class Report
     }
 
     /** ['key'=>, 'label'=>, 'tone'=>] — the evaluation verdict. */
-    private function verdict(int $n, float $accuracy, float $target, float $working, float $floor): array
+    private static function verdict(int $n, float $accuracy, float $target, float $working, float $floor): array
     {
         if ($n < self::MIN_SIGNAL) {
             return ['key' => 'insufficient', 'label' => 'Insufficient signal', 'tone' => 'gray'];
@@ -201,18 +201,23 @@ class Report
                 'uninstrumented' => $course->modules->filter(fn (Module $m) => $m->gymItems->isEmpty())->count(),
                 'modules' => $course->modules
                     ->filter(fn (Module $m) => $m->gymItems->isNotEmpty())
-                    ->map(fn (Module $m) => $this->moduleEvidence($m))
+                    ->map(fn (Module $m) => self::moduleEvidence($m, $this->user, $this->windowDays))
                     ->values()->all(),
             ])
             ->values()->all();
     }
 
-    /** The evidence read for one instrumented module. */
-    private function moduleEvidence(Module $module): array
+    /**
+     * The evidence read for one instrumented module — the canonical coverage
+     * primitive. Public/static because the course layer reads it too:
+     * Module::completedBy() gates module (and thus course) completion on
+     * `covered`, so the dashboard and the gate can never disagree.
+     */
+    public static function moduleEvidence(Module $module, User $user, int $windowDays = 30): array
     {
         $attempts = $module->gymAttempts()
-            ->whereHas('session', fn ($q) => $q->where('user_id', $this->user->id))
-            ->where('gym_attempts.created_at', '>=', now()->subDays($this->windowDays))
+            ->whereHas('session', fn ($q) => $q->where('user_id', $user->id))
+            ->where('gym_attempts.created_at', '>=', now()->subDays($windowDays))
             ->get();
 
         $n = $attempts->count();
@@ -238,9 +243,10 @@ class Report
             'accuracy' => $accuracy,
             'medianLatencyMs' => $median,
             'target' => $target,
+            'pass' => $working,
             'insufficient' => $insufficient,
             'sustained' => $sustained,
-            'verdict' => $this->verdict($n, $accuracy ?? 0.0, $target, $working, $floor),
+            'verdict' => self::verdict($n, $accuracy ?? 0.0, $target, $working, $floor),
             'rung' => ($insufficient || ! $gym)
                 ? null
                 : KnowledgeLadder::rung(KnowledgeLadder::levelForGym($gym, $accuracy, $median)),

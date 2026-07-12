@@ -40,8 +40,8 @@
         <div class="shrink-0">
             @if ($enrollment)
                 <div class="text-right">
-                    <div class="text-sm font-medium text-success-fg">
-                        {{ $enrollment->isComplete() ? '✓ Completed' : 'Enrolled' }}
+                    <div class="text-sm font-medium {{ empty($pendingEvidence) ? 'text-success-fg' : 'text-warning-fg' }}">
+                        {{ $enrollment->isComplete() ? '✓ Completed' : (empty($pendingEvidence) ? 'Enrolled' : 'Evidence pending') }}
                     </div>
                     <div class="mt-1 h-2 w-40 rounded-full bg-surface-sunken">
                         <div class="h-2 rounded-full bg-success" style="width: {{ round($progress * 100) }}%"></div>
@@ -56,6 +56,17 @@
             @endif
         </div>
     </div>
+
+    @if (! empty($pendingEvidence))
+        <div class="mt-5 rounded-lg border border-warning bg-warning-subtle/40 p-4 text-sm text-fg">
+            <span class="font-semibold">All lessons read ✓</span> — completing this course now needs drill
+            evidence for <span class="font-medium">{{ implode(', ', $pendingEvidence) }}</span>.
+            The checkbox says you read it; the gym proves you know it.
+            @if ($practiceGym)
+                <a href="{{ route('gyms.play', $practiceGym->slug) }}" class="text-primary hover:underline">🏋 Practice now</a>
+            @endif
+        </div>
+    @endif
 
     @if ($prereqs->isNotEmpty())
         <div class="mt-5 rounded-lg border {{ $prereqsMet ? 'border-border' : 'border-warning bg-warning-subtle/40' }} p-4">
@@ -85,9 +96,23 @@
         @foreach ($course->modules as $mi => $module)
             <section class="rounded-lg border border-border bg-surface">
                 <header class="border-b border-border px-4 py-3">
-                    <h3 class="font-serif font-semibold text-fg">
-                        <span class="text-subtle">{{ $mi + 1 }}.</span> {{ $module->title }}
-                    </h3>
+                    <div class="flex items-center justify-between gap-3">
+                        <h3 class="font-serif font-semibold text-fg">
+                            <span class="text-subtle">{{ $mi + 1 }}.</span> {{ $module->title }}
+                        </h3>
+                        @php($ev = $moduleEvidence[$module->id] ?? null)
+                        @if ($ev)
+                            @if ($ev['covered'])
+                                <span class="shrink-0 text-xs rounded-full border border-success text-success-fg px-2 py-0.5">✓ Covered</span>
+                            @elseif ($ev['insufficient'])
+                                <span class="shrink-0 text-xs rounded-full bg-surface-sunken text-muted px-2 py-0.5" title="Coverage needs ≥{{ \App\Services\Meter\Report::MIN_SIGNAL }} drill reps">🏋 {{ $ev['n'] }}/{{ \App\Services\Meter\Report::MIN_SIGNAL }} reps</span>
+                            @elseif (! $ev['sustained'])
+                                <span class="shrink-0 text-xs rounded-full bg-surface-sunken text-muted px-2 py-0.5" title="Coverage must hold across ≥{{ \App\Services\Meter\Report::MIN_SESSIONS }} sessions">🏋 one more session</span>
+                            @else
+                                <span class="shrink-0 text-xs rounded-full bg-warning-subtle text-warning-fg px-2 py-0.5" title="Rolling accuracy vs the gym's pass bar">🏋 {{ round($ev['accuracy'] * 100) }}% — pass is {{ round($ev['pass'] * 100) }}%</span>
+                            @endif
+                        @endif
+                    </div>
                     @if ($module->summary)
                         <p class="text-sm text-muted mt-0.5">{{ $module->summary }}</p>
                     @endif

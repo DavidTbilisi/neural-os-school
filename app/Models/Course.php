@@ -120,6 +120,23 @@ class Course extends Model
         return $done / $required->count();
     }
 
+    /**
+     * The evidence-gated completion claim: every module complete for the user
+     * (required lessons checked + coverage evidence where the module is
+     * instrumented). This is stricter than progressFor() == 1.0, which only
+     * measures exposure — the checkbox says "I read it", the gym proves it.
+     */
+    public function completedBy(?User $user): bool
+    {
+        if (! $user || $this->requiredLessons()->isEmpty()) {
+            return false;
+        }
+
+        $this->loadMissing('modules.lessons', 'modules.gymItems');
+
+        return $this->modules->every(fn (Module $m) => $m->completedBy($user));
+    }
+
     /** Whether every prerequisite course is completed by the user (soft signal). */
     public function prerequisitesMetBy(?User $user): bool
     {

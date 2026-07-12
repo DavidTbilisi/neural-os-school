@@ -182,3 +182,13 @@ Step 2 of evidence-based module coverage: METER now reads a coverage verdict per
 - **Honest about the instrument**: modules with no tagged items get no verdict — they surface as an `uninstrumented` count, never silently covered. Attribution lives on `gym_items.module_id`, so coverage reads attempts directly rather than duplicating module ids into the event log.
 - **Dashboard**: a "Module coverage" panel (after Course progress) — per course, each instrumented module with its ✓/verdict chip, n · sessions · accuracy · rung, and the insufficient-signal progress read (`n/10 reps`).
 - Next steps (deferred): module-completion gate in `ShowCourse` (checkbox = exposure, gym = knowledge), per-module target rung, SRS retention evidence.
+
+## Module-completion gate — DONE (2026-07-12)
+
+Step 3 of evidence-based module coverage: course completion is now earned, not checked. The lesson checkbox still measures exposure ("I read it"); on instrumented modules the gym evidence decides completion ("I know it"). Verified by `CoursesTest` (84 tests pass total) + a real-data read (admin on `/courses/dsa`: 9 reps on one module, nothing read → both gates correctly shut).
+
+- **`Module::completedBy()`** — every required lesson checked AND, when the module has tagged gym items, `Report::moduleEvidence()['covered']`. Uninstrumented modules complete from checkboxes alone (nothing to measure against — behavior unchanged for every existing course without a gym). `Course::completedBy()` = every module complete; soft prerequisites inherit the gate for free via `completed_at`.
+- **`Report::moduleEvidence()` went public static** — the single coverage primitive shared by the dashboard and the gate, so they can never disagree. (`verdict()` became static with it; evidence read gained a `pass` key.)
+- **`ShowCourse::syncCompletion()`** routes through the gate, with two deliberate asymmetries: (1) coverage earned in the gym has no lesson-toggle to hook, so the gate is re-checked on every course-page visit (mount) and completion lands then; (2) unchecking a lesson still revokes completion, but evidence aging out of the 30-day METER window does **not** — once earned, completion is sticky against decay (retention is SRS's job, not a reason to silently un-complete a course).
+- **Course page UI**: per-module chips name the next missing guard in gate order (`🏋 n/10 reps` → `🏋 one more session` → `🏋 75% — pass is 80%` → `✓ Covered`); when all lessons are read but the gate is open, the header reads "Evidence pending" and a banner names the pending modules with a Practice link.
+- Next steps (deferred): per-module target rung, SRS retention evidence, execution/retrieval gym modes for deeper rungs.

@@ -6,6 +6,9 @@ use App\Enums\UserRole;
 use App\Livewire\ShowCourse;
 use App\Models\Course;
 use App\Models\Enrollment;
+use App\Models\Gym;
+use App\Models\GymAttempt;
+use App\Models\GymSession;
 use App\Models\Lesson;
 use App\Models\LessonCompletion;
 use App\Models\Module;
@@ -202,6 +205,142 @@ class CoursesTest extends TestCase
             ->call('enroll');
 
         $this->assertTrue($learner->fresh()->isEnrolledIn($advanced->fresh()));
+    }
+
+    // ---- evidence gate ------------------------------------------------------
+
+    /** Attach a recognition gym to the course with its items tagged to the module. */
+    private function instrument(Course $course, Module $module): Gym
+    {
+        $gym = Gym::create([
+            'slug' => $course->slug.'-gym', 'title' => 'Gate Gym', 'mode' => 'recognition',
+            'timer_seconds' => 8, 'round_count' => 2, 'latency_target_ms' => 6000,
+            'pass_accuracy' => 0.80, 'promote_accuracy' => 0.85, 'status' => Gym::STATUS_PUBLISHED,
+            'course_id' => $course->id,
+        ]);
+        foreach (range(0, 1) as $i) {
+            $gym->items()->create([
+                'prompt' => "Q{$i}", 'choices' => ['A', 'B'], 'correct' => 'A',
+                'module_id' => $module->id, 'sort' => $i,
+            ]);
+        }
+
+        return $gym;
+    }
+
+    /** Drill telemetry: sessions × attempts at a given accuracy (coverage reads gym_attempts). */
+    private function drill(User $u, Gym $gym, int $sessions, int $perSession, float $accuracy): void
+    {
+        $item = $gym->items->first();
+        for ($s = 0; $s < $sessions; $s++) {
+            $session = GymSession::create(['user_id' => $u->id, 'gym_id' => $gym->id, 'started_at' => now()]);
+            for ($i = 0; $i < $perSession; $i++) {
+                $correct = $i < (int) round($perSession * $accuracy);
+                GymAttempt::create([
+                    'gym_session_id' => $session->id, 'gym_item_id' => $item->id,
+                    'selected' => $correct ? 'A' : 'B', 'is_correct' => $correct, 'latency_ms' => 1000,
+                ]);
+            }
+        }
+    }
+
+    public function test_reading_alone_does_not_complete_an_instrumented_course(): void
+    {
+        $course = $this->course('gate-course');
+        $m1 = $course->modules()->create(['title' => 'Gated Module', 'sort' => 0]);
+        $l1 = $this->lesson($m1, 'gate-lesson');
+        $gym = $this->instrument($course, $m1);
+
+        $learner = User::factory()->create(['role' => UserRole::Learner]);
+        $this->actingAs($learner);
+
+        // All lessons checked → exposure done, but the gate stays shut.
+        Livewire::test(ShowCourse::class, ['slug' => 'gate-course'])
+            ->call('enroll')
+            ->call('toggleLesson', $l1->id)
+            ->assertSee('Evidence pending')
+            ->assertSee('Gated Module')
+            ->assertSee('0/10 reps');
+
+        $this->assertEqualsWithDelta(1.0, $course->fresh()->progressFor($learner), 0.001);
+        $this->assertNull(Enrollment::firstWhere('course_id', $course->id)->completed_at);
+
+        // Coverage earned in the gym → the next visit closes the loop.
+        $this->drill($learner, $gym, sessions: 2, perSession: 6, accuracy: 1.0);
+
+        Livewire::test(ShowCourse::class, ['slug' => 'gate-course'])
+            ->assertSee('✓ Covered')
+            ->assertSee('✓ Completed');
+
+        $this->assertNotNull(Enrollment::firstWhere('course_id', $course->id)->completed_at);
+    }
+
+    public function test_evidence_alone_does_not_complete_without_reading(): void
+    {
+        $course = $this->course('drill-first-course');
+        $m1 = $course->modules()->create(['title' => 'M1', 'sort' => 0]);
+        $l1 = $this->lesson($m1, 'drill-first-lesson');
+        $gym = $this->instrument($course, $m1);
+
+        $learner = User::factory()->create(['role' => UserRole::Learner]);
+        $this->actingAs($learner);
+
+        $component = Livewire::test(ShowCourse::class, ['slug' => 'drill-first-course'])->call('enroll');
+        $this->drill($learner, $gym, sessions: 2, perSession: 6, accuracy: 1.0);
+
+        // Covered but unread → not complete (the checkbox still means something).
+        $this->assertTrue($m1->fresh()->completedBy($learner) === false);
+        $this->assertNull(Enrollment::firstWhere('course_id', $course->id)->completed_at);
+
+        // Checking the last lesson completes immediately — evidence was already in.
+        $component->call('toggleLesson', $l1->id);
+        $this->assertNotNull(Enrollment::firstWhere('course_id', $course->id)->completed_at);
+    }
+
+    public function test_accuracy_below_pass_keeps_the_gate_shut(): void
+    {
+        $course = $this->course('miss-course');
+        $m1 = $course->modules()->create(['title' => 'M1', 'sort' => 0]);
+        $l1 = $this->lesson($m1, 'miss-lesson');
+        $gym = $this->instrument($course, $m1);
+
+        $learner = User::factory()->create(['role' => UserRole::Learner]);
+        $this->actingAs($learner);
+        $this->drill($learner, $gym, sessions: 2, perSession: 8, accuracy: 0.75); // pass is .80
+
+        Livewire::test(ShowCourse::class, ['slug' => 'miss-course'])
+            ->call('enroll')
+            ->call('toggleLesson', $l1->id)
+            ->assertSee('75%')
+            ->assertSee('pass is 80%');
+
+        $this->assertNull(Enrollment::firstWhere('course_id', $course->id)->completed_at);
+    }
+
+    public function test_completion_is_sticky_when_evidence_ages_out(): void
+    {
+        $course = $this->course('sticky-course');
+        $m1 = $course->modules()->create(['title' => 'M1', 'sort' => 0]);
+        $l1 = $this->lesson($m1, 'sticky-lesson');
+        $gym = $this->instrument($course, $m1);
+
+        $learner = User::factory()->create(['role' => UserRole::Learner]);
+        $this->actingAs($learner);
+        $this->drill($learner, $gym, sessions: 2, perSession: 6, accuracy: 1.0);
+
+        Livewire::test(ShowCourse::class, ['slug' => 'sticky-course'])
+            ->call('enroll')
+            ->call('toggleLesson', $l1->id);
+        $this->assertNotNull(Enrollment::firstWhere('course_id', $course->id)->completed_at);
+
+        // Attempts slide out of the METER window — completion must not silently revoke…
+        $this->travel(40)->days();
+        Livewire::test(ShowCourse::class, ['slug' => 'sticky-course'])->assertSee('✓ Completed');
+        $this->assertNotNull(Enrollment::firstWhere('course_id', $course->id)->completed_at);
+
+        // …but unchecking a lesson still does, as before.
+        Livewire::test(ShowCourse::class, ['slug' => 'sticky-course'])->call('toggleLesson', $l1->id);
+        $this->assertNull(Enrollment::firstWhere('course_id', $course->id)->completed_at);
     }
 
     // ---- cross-links / admin ---------------------------------------------
