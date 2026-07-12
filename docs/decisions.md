@@ -173,3 +173,12 @@ Step 1 of evidence-based module coverage: module completion today is an honor-sy
 - **Seeder**: each of the 20 Algorithm Pattern Gym items is tagged with the DSA module it exercises (7 of 10 modules covered — Foundations, Strings/Math & Hardness, and Practice & Retention have no recognition items). Tags resolve by module *title* at seed time, so re-running `GymSeeder` after a DSA course re-seed restores them; `GymTest` covers the churn → re-tag round-trip.
 - En route: fixed two `GymTest` assertions left stale by the KnowledgeLadder refactor (expected retired `S1`/`S3` stage codes; sessions now record ladder codes `L0`/`L7`).
 - Next steps (deferred): per-module `Report` verdict, module-completion gate in `ShowCourse`, target-rung per module, SRS-based retention evidence.
+
+## Per-module coverage verdict — DONE (2026-07-12)
+
+Step 2 of evidence-based module coverage: METER now reads a coverage verdict per instrumented module. Verified by `MeterTest` (80 tests pass total) + a real-data read on the dev DB (admin's pre-tagging attempts attribute correctly per module; all read "Insufficient signal" at n=6–9, as the N<10 guard demands).
+
+- **`Report::coverage()`** — for each enrolled course, each module with tagged gym items gets an evidence read from the gym-attempt stream (`Module::gymAttempts()`, per-learner via the session, windowed). A module is COVERED only when the claim survives three guards: **n ≥ 10** reps (`MIN_SIGNAL`), across **≥ 2 sessions** (`MIN_SESSIONS`, the sustained/not-one-lucky-run rule), at **accuracy ≥ the instrument gym's `pass_accuracy`** — rung 4 Classifiable or better. The read also carries the existing floor/working/target verdict and the Knowledge Ladder rung (`levelForGym`, latency-aware) once signal is sufficient.
+- **Honest about the instrument**: modules with no tagged items get no verdict — they surface as an `uninstrumented` count, never silently covered. Attribution lives on `gym_items.module_id`, so coverage reads attempts directly rather than duplicating module ids into the event log.
+- **Dashboard**: a "Module coverage" panel (after Course progress) — per course, each instrumented module with its ✓/verdict chip, n · sessions · accuracy · rung, and the insufficient-signal progress read (`n/10 reps`).
+- Next steps (deferred): module-completion gate in `ShowCourse` (checkbox = exposure, gym = knowledge), per-module target rung, SRS retention evidence.

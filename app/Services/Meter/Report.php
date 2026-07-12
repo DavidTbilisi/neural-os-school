@@ -5,14 +5,18 @@ namespace App\Services\Meter;
 use App\Models\Course;
 use App\Models\Gym;
 use App\Models\MeterEvent;
+use App\Models\Module;
 use App\Models\User;
+use App\Support\KnowledgeLadder;
 use Illuminate\Support\Collection;
 
 /**
  * METER's Evaluate + Report functions for one learner. Reads the unified event
  * log and produces a private dashboard view-model: a Daily Glance, per-gym
  * performance verdicts (accuracy + median latency vs floor/working/target, with
- * the N<10 "insufficient signal" guard), and course progress.
+ * the N<10 "insufficient signal" guard), course progress, and per-module
+ * coverage evidence (read straight from the gym-attempt stream, where module
+ * attribution lives on the tagged items).
  *
  * Deliberately no gamification (no points/streaks/leaderboards) and no point
  * estimates without their N — trends and ranges only, per the METER spec.
@@ -21,6 +25,9 @@ class Report
 {
     /** Minimum reps before a metric is trusted (METER "insufficient signal"). */
     public const MIN_SIGNAL = 10;
+
+    /** Minimum distinct sessions before coverage counts as sustained (not one lucky run). */
+    public const MIN_SESSIONS = 2;
 
     public function __construct(
         private User $user,
@@ -40,6 +47,7 @@ class Report
             'glance' => $this->glance($events),
             'performance' => $this->performance($events),
             'retrieval' => $this->retrieval($events),
+            'coverage' => $this->coverage(),
             'totals' => $this->totals($events),
         ];
     }
@@ -165,6 +173,78 @@ class Report
             'lessonsInWindow' => $lessons->count(),
             'lessonsThisWeek' => $lessons->filter(fn (MeterEvent $e) => $e->occurred_at->greaterThanOrEqualTo(now()->subDays(7)))->count(),
             'courses' => $courses->all(),
+        ];
+    }
+
+    /**
+     * Per-module coverage evidence for each enrolled course, read from the
+     * gym-attempt stream via the module-tagged items (Module::gymAttempts()).
+     * A module reads as COVERED when the claim survives all three guards:
+     * n ≥ MIN_SIGNAL reps in the window, across ≥ MIN_SESSIONS sessions,
+     * at rolling accuracy ≥ the instrument gym's pass_accuracy — i.e. rung 4
+     * (Classifiable) or better on the Knowledge Ladder, sustained.
+     *
+     * Modules with no tagged items have no instrument and get no verdict —
+     * they are counted as `uninstrumented`, never silently marked covered.
+     */
+    private function coverage(): array
+    {
+        $courses = $this->user->enrollments()
+            ->with('course.modules.gymItems.gym')->get()
+            ->map(fn ($enrollment) => $enrollment->course);
+
+        return $courses
+            ->filter(fn (Course $course) => $course->modules->contains(fn (Module $m) => $m->gymItems->isNotEmpty()))
+            ->map(fn (Course $course) => [
+                'title' => $course->title,
+                'slug' => $course->slug,
+                'uninstrumented' => $course->modules->filter(fn (Module $m) => $m->gymItems->isEmpty())->count(),
+                'modules' => $course->modules
+                    ->filter(fn (Module $m) => $m->gymItems->isNotEmpty())
+                    ->map(fn (Module $m) => $this->moduleEvidence($m))
+                    ->values()->all(),
+            ])
+            ->values()->all();
+    }
+
+    /** The evidence read for one instrumented module. */
+    private function moduleEvidence(Module $module): array
+    {
+        $attempts = $module->gymAttempts()
+            ->whereHas('session', fn ($q) => $q->where('user_id', $this->user->id))
+            ->where('gym_attempts.created_at', '>=', now()->subDays($this->windowDays))
+            ->get();
+
+        $n = $attempts->count();
+        $sessions = $attempts->pluck('gym_session_id')->unique()->count();
+        $accuracy = $n > 0 ? $attempts->avg(fn ($a) => $a->is_correct ? 1 : 0) : null;
+        $median = Gym::median($attempts->pluck('latency_ms'));
+
+        // The instrument: the gym owning most of the module's tagged items.
+        $gymId = $module->gymItems->countBy('gym_id')->sortDesc()->keys()->first();
+        $gym = $module->gymItems->firstWhere('gym_id', $gymId)?->gym;
+
+        $target = $gym?->promote_accuracy ?? 0.85;
+        $working = $gym?->pass_accuracy ?? 0.80;
+        $floor = max(0.0, $working - 0.20);
+
+        $insufficient = $n < self::MIN_SIGNAL;
+        $sustained = $sessions >= self::MIN_SESSIONS;
+
+        return [
+            'title' => $module->title,
+            'n' => $n,
+            'sessions' => $sessions,
+            'accuracy' => $accuracy,
+            'medianLatencyMs' => $median,
+            'target' => $target,
+            'insufficient' => $insufficient,
+            'sustained' => $sustained,
+            'verdict' => $this->verdict($n, $accuracy ?? 0.0, $target, $working, $floor),
+            'rung' => ($insufficient || ! $gym)
+                ? null
+                : KnowledgeLadder::rung(KnowledgeLadder::levelForGym($gym, $accuracy, $median)),
+            'covered' => ! $insufficient && $sustained && $accuracy >= $working,
         ];
     }
 

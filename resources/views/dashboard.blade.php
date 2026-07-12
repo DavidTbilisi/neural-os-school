@@ -159,6 +159,49 @@
                 </div>
             @endif
 
+            {{-- Module coverage (evidence) -------------------------------------}}
+            @if (! empty($report['coverage']))
+                <div class="bg-white shadow-sm sm:rounded-lg p-6">
+                    <h3 class="font-semibold text-gray-900 mb-1">Module coverage</h3>
+                    <p class="text-xs text-gray-500 mb-4">
+                        Evidence from drill telemetry, not checkboxes. A module reads as covered ✓ after
+                        ≥{{ \App\Services\Meter\Report::MIN_SIGNAL }} reps across
+                        ≥{{ \App\Services\Meter\Report::MIN_SESSIONS }} sessions at pass accuracy.
+                    </p>
+                    <div class="space-y-5">
+                        @foreach ($report['coverage'] as $cc)
+                            <div>
+                                <div class="flex items-center justify-between text-sm mb-2">
+                                    <a href="{{ route('courses.show', $cc['slug']) }}" class="font-medium text-indigo-700 hover:underline">{{ $cc['title'] }}</a>
+                                    @if ($cc['uninstrumented'] > 0)
+                                        <span class="text-xs text-gray-400">{{ $cc['uninstrumented'] }} {{ Str::plural('module', $cc['uninstrumented']) }} without drill items yet</span>
+                                    @endif
+                                </div>
+                                <ul class="space-y-2">
+                                    @foreach ($cc['modules'] as $m)
+                                        <li class="flex items-center justify-between gap-3 text-sm">
+                                            <span class="text-gray-800">
+                                                {{ $m['title'] }}@if ($m['covered']) <span class="text-emerald-600" title="Covered: sustained pass-accuracy evidence">✓</span>@endif
+                                            </span>
+                                            <span class="flex items-center gap-2 whitespace-nowrap">
+                                                @if ($m['insufficient'])
+                                                    <span class="text-xs text-gray-400">{{ $m['n'] }}/{{ \App\Services\Meter\Report::MIN_SIGNAL }} reps</span>
+                                                @else
+                                                    <span class="text-xs text-gray-500">
+                                                        {{ round($m['accuracy'] * 100) }}% · n={{ $m['n'] }} · {{ $m['sessions'] }} {{ Str::plural('session', $m['sessions']) }}@if ($m['rung']) · L{{ $m['rung']['level'] }} {{ $m['rung']['name'] }}@endif
+                                                    </span>
+                                                @endif
+                                                <span class="text-xs rounded-full px-2 py-0.5 {{ $tone($m['verdict']['tone']) }}">{{ $m['verdict']['label'] }}</span>
+                                            </span>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
             {{-- Totals + Goodhart guard ---------------------------------------}}
             <div class="grid gap-4 sm:grid-cols-4">
                 @php $t = $report['totals']; @endphp
