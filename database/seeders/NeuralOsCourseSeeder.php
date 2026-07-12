@@ -13,17 +13,18 @@ use Illuminate\Support\Facades\DB;
  * through the wiki's learning-system pages. The spine of the personal framework
  * ordered for building fluency — why encode-first works, the memory-palace
  * substrate, the CAST encoding engine, the retention science that makes it
- * stick, drilling to automaticity, measuring with METER, then applying it.
+ * stick, drilling to automaticity, measuring with METER, operating it day to
+ * day, then applying it.
  *
- * Same shape as DsaCourseSeeder. Lessons resolve to already-PUBLIC wiki pages
- * (Page::public()); a few core pages are still private in the wiki and are
- * therefore omitted — see the note below. Idempotent.
+ * Same shape as DsaCourseSeeder. Anchored on the neural-os-overview hub page
+ * (the seven-pillar map of the whole framework) rather than cast-overview, one
+ * pillar among several. Publishes that hub plus the daily-loop/rollout pages
+ * it depends on, since the course is built on them — see PUBLISH below. A few
+ * other pages are still private and remain omitted (publish in the wiki to
+ * include them): neural-os-research-thesis, software-design-principles-for-
+ * neural-os, neural-os-authoring-dsl. Idempotent.
  *
  *   ./run php artisan db:seed --class=NeuralOsCourseSeeder
- *
- * Private pages intentionally left out (publish in the wiki to include them):
- *   neural-os-daily-loop, neural-os-30-day-rollout, neural-os-research-thesis,
- *   software-design-principles-for-neural-os, neural-os-authoring-dsl.
  */
 class NeuralOsCourseSeeder extends Seeder
 {
@@ -32,7 +33,10 @@ class NeuralOsCourseSeeder extends Seeder
     private const SLUG = 'neural-os';
 
     /** Anchor page for the course's source/domain link. */
-    private const ANCHOR = 'cast-overview';
+    private const ANCHOR = 'neural-os-overview';
+
+    /** Pages this course depends on that must be published for lessons to attach. */
+    private const PUBLISH = ['neural-os-overview', 'neural-os-daily-loop', 'neural-os-30-day-rollout'];
 
     /**
      * The curriculum. Each module is [title, summary, lessons(slugs)]; a module
@@ -62,6 +66,9 @@ class NeuralOsCourseSeeder extends Seeder
             ['Measure it — METER', 'Instrument your learning instead of guessing: the measurement layer.', [
                 'meter-overview',
             ]],
+            ['Operating it day to day', 'The concrete rhythm that runs all of it continuously: what runs when, and how to start from zero.', [
+                'neural-os-daily-loop', 'neural-os-30-day-rollout',
+            ]],
             ['Put it to work', 'The framework applied — systems thinking, a worked domain, and how it meets Anki.', [
                 'systems-thinking-and-cast-integration', 'math-learning-with-neural-os', 'cast-anki-requirements',
             ], 'optional'],
@@ -70,16 +77,24 @@ class NeuralOsCourseSeeder extends Seeder
 
     public function run(): void
     {
-        $anchor = Page::where('slug', self::ANCHOR)->first();
+        DB::transaction(function () {
+            // The course is anchored on and built on these pages; publish them
+            // first so the lesson pass below (which only sees public pages)
+            // can attach them.
+            $published = Page::whereIn('slug', self::PUBLISH)
+                ->where('visibility', '!=', Page::VISIBILITY_PUBLIC)
+                ->update(['visibility' => Page::VISIBILITY_PUBLIC]);
 
-        DB::transaction(function () use ($anchor) {
+            $anchor = Page::where('slug', self::ANCHOR)->first();
+
             $result = $this->upsertCourse(self::SLUG, [
                 'title' => 'Neural OS — My Learning Framework',
                 'subtitle' => 'The personal learning operating system as a guided, drillable path — encode, retain, automate, measure.',
                 'description' => 'A guided pass through the framework, ordered for building fluency: understand why '
                     .'encode-first learning works, install the memory-palace substrate, learn the CAST encoding engine, '
-                    .'then the retention science that makes it stick, the drills that take it to automaticity, and the '
-                    .'METER layer that measures it. Every lesson is a wiki page you can read in place.',
+                    .'then the retention science that makes it stick, the drills that take it to automaticity, the '
+                    .'METER layer that measures it, and the daily rhythm that runs all of it continuously. Every '
+                    .'lesson is a wiki page you can read in place.',
                 'source_page_id' => $anchor?->id,
                 'domain_id' => $anchor?->domain_id,
                 'status' => Course::STATUS_PUBLISHED,
@@ -87,7 +102,8 @@ class NeuralOsCourseSeeder extends Seeder
             ], $this->curriculum());
 
             $this->command?->info("Seeded published course '".self::SLUG."': "
-                .$result['course']->modules()->count()." modules, {$result['lessons']} lessons.");
+                .$result['course']->modules()->count()." modules, {$result['lessons']} lessons"
+                .($published ? ", {$published} pages published" : '').'.');
 
             if ($result['missing'] !== []) {
                 $this->command?->warn('  Skipped '.count($result['missing']).' unpublished/missing pages: '.implode(', ', $result['missing']));
