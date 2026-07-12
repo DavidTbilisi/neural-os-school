@@ -388,6 +388,20 @@ class CoursesTest extends TestCase
         $this->assertNull(Enrollment::firstWhere('course_id', $course->id)->completed_at);
     }
 
+    // ---- in-course lesson reader -------------------------------------------
+
+    public function test_course_page_links_lessons_to_the_in_course_reader(): void
+    {
+        $course = $this->course('linked-lessons-course');
+        $m1 = $course->modules()->create(['title' => 'M1', 'sort' => 0]);
+        $this->lesson($m1, 'linked-lesson');
+
+        $this->get('/courses/linked-lessons-course')
+            ->assertOk()
+            ->assertSee(route('courses.lessons.show', ['linked-lessons-course', 'linked-lesson']), escape: false)
+            ->assertDontSee(route('wiki.show', 'linked-lesson'), escape: false);
+    }
+
     // ---- cross-links / admin ---------------------------------------------
 
     public function test_wiki_page_shows_part_of_course_crosslink(): void

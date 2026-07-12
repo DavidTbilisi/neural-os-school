@@ -30,6 +30,12 @@ class Lesson extends Model
         return $this->hasMany(LessonCompletion::class);
     }
 
+    /** Gym items tagged as checking this specific lesson (a subset of the parent module's items). */
+    public function gymItems(): HasMany
+    {
+        return $this->hasMany(GymItem::class);
+    }
+
     public function completedBy(?User $user): bool
     {
         if (! $user) {

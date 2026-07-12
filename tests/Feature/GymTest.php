@@ -9,6 +9,8 @@ use App\Models\Gym;
 use App\Models\GymAttempt;
 use App\Models\GymItem;
 use App\Models\GymSession;
+use App\Models\Lesson;
+use App\Models\Page;
 use App\Models\User;
 use Database\Seeders\DsaCourseSeeder;
 use Database\Seeders\GymSeeder;
@@ -258,5 +260,63 @@ class GymTest extends TestCase
         $this->assertSame(0, GymItem::whereNull('module_id')->count());
         $this->assertEquals($itemIdsBefore, $gym->items()->orderBy('sort')->pluck('id'));
         $this->assertEquals($moduleIdsBefore, $gym->items()->orderBy('sort')->pluck('module_id'));
+    }
+
+    // ---- lesson tagging (lesson-embedded checks) ---------------------------
+
+    private function lessonFor(string $slug): Lesson
+    {
+        $course = Course::create(['slug' => "{$slug}-course", 'title' => 'Lesson Course', 'status' => Course::STATUS_PUBLISHED]);
+        $module = $course->modules()->create(['title' => 'Module A', 'sort' => 0]);
+        $page = Page::create(['slug' => $slug, 'title' => ucwords($slug), 'rel_path' => "x/{$slug}.md", 'body_md' => "# {$slug}"]);
+
+        return Lesson::create(['module_id' => $module->id, 'page_id' => $page->id, 'title' => ucwords($slug), 'sort' => 0]);
+    }
+
+    public function test_gym_items_can_be_tagged_with_a_lesson_in_addition_to_a_module(): void
+    {
+        $lesson = $this->lessonFor('tagged-lesson');
+
+        $gym = $this->gym('lesson-tag-gym', rounds: 1);
+        $item = $gym->items->first();
+        $item->update(['module_id' => $lesson->module_id, 'lesson_id' => $lesson->id]);
+
+        $this->assertTrue($item->fresh()->lesson->is($lesson));
+        $this->assertTrue($lesson->gymItems->contains($item));
+        $this->assertTrue($item->fresh()->module->is($lesson->module));
+    }
+
+    /** Every lesson-tagged item's module_id must match its lesson's parent module — the invariant Report::moduleEvidence() relies on. */
+    public function test_lesson_check_items_module_id_matches_their_lessons_parent_module(): void
+    {
+        $lesson = $this->lessonFor('invariant-lesson');
+
+        $gym = $this->gym('invariant-gym', rounds: 1);
+        $item = $gym->items->first();
+        $item->update(['module_id' => $lesson->module_id, 'lesson_id' => $lesson->id]);
+
+        $tagged = GymItem::whereNotNull('lesson_id')->get();
+        foreach ($tagged as $taggedItem) {
+            $this->assertSame(
+                $taggedItem->lesson->module_id,
+                $taggedItem->module_id,
+                "GymItem {$taggedItem->id} module_id must match its lesson's parent module",
+            );
+        }
+    }
+
+    public function test_deleting_a_lesson_untags_its_check_items_without_deleting_them(): void
+    {
+        $lesson = $this->lessonFor('doomed-lesson');
+
+        $gym = $this->gym('doomed-gym', rounds: 1);
+        $item = $gym->items->first();
+        $item->update(['module_id' => $lesson->module_id, 'lesson_id' => $lesson->id]);
+
+        $lesson->delete();
+
+        $this->assertNull($item->fresh()->lesson_id);
+        $this->assertNotNull($item->fresh()->module_id); // module tag (coverage rollup) survives independently
+        $this->assertSame(1, $gym->items()->count());
     }
 }

@@ -2,8 +2,8 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\ReadsWikiPage;
 use App\Models\Course;
-use App\Models\Link;
 use App\Models\Page;
 use App\Services\Wiki\RepresentationBuilder;
 use App\Services\Wiki\WikiRenderer;
@@ -14,6 +14,8 @@ use Livewire\Component;
 #[Layout('layouts.public')]
 class ShowPage extends Component
 {
+    use ReadsWikiPage;
+
     public Page $page;
 
     public string $html;
@@ -28,24 +30,7 @@ class ShowPage extends Component
     {
         $page = Page::where('slug', $slug)->firstOrFail();
 
-        // Public + unlisted are viewable by anyone; private only as a staff preview.
-        $viewable = in_array($page->visibility, [Page::VISIBILITY_PUBLIC, Page::VISIBILITY_UNLISTED], true)
-            || (auth()->user()?->isStaff() ?? false);
-        abort_unless($viewable, 404);
-
-        $this->page = $page->load('domain');
-        $this->html = $renderer->render($page);
-
-        $this->backlinks = Link::where('target_page_id', $page->id)
-            ->where('resolved', true)
-            ->whereHas('source', fn (Builder $q) => $q->viewable())
-            ->with('source:id,slug,title')
-            ->get()
-            ->pluck('source')
-            ->filter()
-            ->unique('id')
-            ->sortBy('title')
-            ->values();
+        $this->loadPage($page, $renderer);
 
         // Published courses that use this page as a lesson (wiki ↔ course cross-link).
         $this->courses = Course::published()

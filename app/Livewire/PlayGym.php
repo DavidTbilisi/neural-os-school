@@ -7,8 +7,7 @@ use App\Models\GymAttempt;
 use App\Models\GymItem;
 use App\Models\GymSession;
 use App\Models\SrsCard;
-use App\Support\Meter;
-use App\Support\Srs;
+use App\Support\GymScoring;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
@@ -96,32 +95,10 @@ class PlayGym extends Component
             return;
         }
 
-        $isCorrect = $item->isCorrect($choice);
-
-        $attempt = GymAttempt::create([
-            'gym_session_id' => $this->sessionId,
-            'gym_item_id' => $item->id,
-            'selected' => $choice,
-            'is_correct' => $isCorrect,
-            'latency_ms' => max(0, $latencyMs),
-        ]);
-
-        Meter::gymRep($attempt); // emit the METER rep event
-
-        // Every exposure reschedules the item's retention card; a review rep
-        // additionally lands in the Retrieval layer of the event log.
-        Srs::record((int) auth()->id(), $item, $isCorrect);
-        if ($this->isReview()) {
-            Meter::srsReview($attempt);
-        }
-
-        GymSession::whereKey($this->sessionId)->update([
-            'total' => $this->session()->total + 1,
-            'correct' => $this->session()->correct + ($isCorrect ? 1 : 0),
-        ]);
+        $attempt = GymScoring::record($this->session(), $item, $choice, $latencyMs, $this->isReview());
 
         $this->feedback = [
-            'correct' => $isCorrect,
+            'correct' => $attempt->is_correct,
             'selected' => $choice,
             'answer' => $item->correct,
             'explanation' => $item->explanation,
@@ -152,25 +129,7 @@ class PlayGym extends Component
     /** Compute + persist the session summary (accuracy, median latency, stage). */
     private function finalize(): void
     {
-        $session = $this->session();
-        $attempts = $session->attempts()->get();
-
-        $total = $attempts->count();
-        $correct = $attempts->where('is_correct', true)->count();
-        $accuracy = $total ? $correct / $total : 0.0;
-        $median = Gym::median($attempts->pluck('latency_ms'));
-
-        $session->update([
-            'completed_at' => Carbon::now(),
-            'total' => $total,
-            'correct' => $correct,
-            'accuracy' => $accuracy,
-            'median_latency_ms' => $median,
-            // Store the Red Queen Knowledge Ladder rung (0–9) as "L{n}".
-            'stage_code' => 'L'.$this->gym->knowledgeLevelFor($accuracy, $median),
-        ]);
-
-        Meter::gymSession($session); // emit the METER session-summary event
+        GymScoring::finalizeSession($this->session(), $this->gym);
     }
 
     public function currentItem(): ?GymItem

@@ -8,6 +8,7 @@ use App\Livewire\Library;
 use App\Livewire\MyCourses;
 use App\Livewire\PlayGym;
 use App\Livewire\ShowCourse;
+use App\Livewire\ShowLesson;
 use App\Livewire\ShowPage;
 use Illuminate\Support\Facades\Route;
 
@@ -20,6 +21,7 @@ Route::get('/wiki/{slug}', ShowPage::class)->name('wiki.show');
 // Courses — guided paths through the wiki.
 Route::get('/courses', Courses::class)->name('courses');
 Route::get('/courses/{slug}', ShowCourse::class)->name('courses.show');
+Route::get('/courses/{courseSlug}/lessons/{lessonSlug}', ShowLesson::class)->name('courses.lessons.show');
 Route::get('/my-courses', MyCourses::class)->middleware(['auth', 'verified'])->name('courses.mine');
 
 // Per-course Excalidraw whiteboard (one saved scene per learner per course).
