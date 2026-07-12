@@ -21,9 +21,9 @@ use Illuminate\Support\Facades\DB;
  *
  * Each item is tagged with the DSA course module it exercises, so telemetry can
  * be scoped per module (the seed of evidence-based module coverage). Tags are
- * resolved by module *title* because course re-seeds rebuild modules with fresh
- * IDs — seed this after DsaCourseSeeder, and re-run it after a course re-seed
- * to restore the tags.
+ * resolved by module *title* at seed time; course seeders upsert modules in
+ * place (IDs stable), so tags survive course re-seeds — re-run this seeder
+ * only after renaming modules or changing the item→module mapping.
  */
 class GymSeeder extends Seeder
 {

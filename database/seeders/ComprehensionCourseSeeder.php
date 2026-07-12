@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\Course;
-use App\Models\Lesson;
 use App\Models\Page;
+use Database\Seeders\Concerns\UpsertsCourseCurriculum;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -25,6 +25,8 @@ use Illuminate\Support\Facades\DB;
  */
 class ComprehensionCourseSeeder extends Seeder
 {
+    use UpsertsCourseCurriculum;
+
     private const SLUG = 'comprehension';
 
     /** Pages this course depends on that must be published for lessons to attach. */
@@ -128,10 +130,7 @@ class ComprehensionCourseSeeder extends Seeder
 
             $roadmap = Page::where('slug', '5-gates-of-comprehension')->first();
 
-            Course::where('slug', self::SLUG)->get()->each->delete();
-
-            $course = Course::create([
-                'slug' => self::SLUG,
+            $result = $this->upsertCourse(self::SLUG, [
                 'title' => 'Comprehension',
                 'subtitle' => 'The human-owned first gate of Neural OS — how to actually understand a thing before you encode it.',
                 'description' => 'A guided pass through the comprehension layer, ordered for fluency: first why the '
@@ -146,35 +145,7 @@ class ComprehensionCourseSeeder extends Seeder
                 'domain_id' => $roadmap?->domain_id,
                 'status' => Course::STATUS_PUBLISHED,
                 'sort' => 2,
-            ]);
-
-            $pages = Page::public()->pluck('id', 'slug');
-            $missing = [];
-            $lessonCount = 0;
-
-            foreach ($this->curriculum() as $mi => $row) {
-                [$title, $summary, $slugs] = $row;
-                $optional = ($row[3] ?? null) === 'optional';
-
-                $module = $course->modules()->create(['title' => $title, 'summary' => $summary, 'sort' => $mi]);
-
-                foreach ($slugs as $li => $slug) {
-                    $pageId = $pages->get($slug);
-                    if (! $pageId) {
-                        $missing[] = $slug;
-
-                        continue;
-                    }
-                    Lesson::create([
-                        'module_id' => $module->id,
-                        'page_id' => $pageId,
-                        'title' => Page::whereKey($pageId)->value('title'),
-                        'optional' => $optional,
-                        'sort' => $li,
-                    ]);
-                    $lessonCount++;
-                }
-            }
+            ], $this->curriculum());
 
             // Curated frozen scenes for the hero pages.
             $scened = 0;
@@ -183,10 +154,10 @@ class ComprehensionCourseSeeder extends Seeder
             }
 
             $this->command?->info("Seeded published course '".self::SLUG."': "
-                .$course->modules()->count()." modules, {$lessonCount} lessons, {$scened} curated scenes"
+                .$result['course']->modules()->count()." modules, {$result['lessons']} lessons, {$scened} curated scenes"
                 .($published ? ", {$published} pages published" : '').'.');
-            if ($missing !== []) {
-                $this->command?->warn('  Skipped '.count($missing).' unpublished/missing pages: '.implode(', ', $missing));
+            if ($result['missing'] !== []) {
+                $this->command?->warn('  Skipped '.count($result['missing']).' unpublished/missing pages: '.implode(', ', $result['missing']));
             }
         });
     }

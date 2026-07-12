@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\Course;
-use App\Models\Lesson;
 use App\Models\Page;
+use Database\Seeders\Concerns\UpsertsCourseCurriculum;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -27,6 +27,8 @@ use Illuminate\Support\Facades\DB;
  */
 class NeuralOsCourseSeeder extends Seeder
 {
+    use UpsertsCourseCurriculum;
+
     private const SLUG = 'neural-os';
 
     /** Anchor page for the course's source/domain link. */
@@ -71,11 +73,7 @@ class NeuralOsCourseSeeder extends Seeder
         $anchor = Page::where('slug', self::ANCHOR)->first();
 
         DB::transaction(function () use ($anchor) {
-            // Drop any prior run of this seeder (rebuild modules/lessons in place).
-            Course::whereIn('slug', [self::SLUG])->get()->each->delete();
-
-            $course = Course::create([
-                'slug' => self::SLUG,
+            $result = $this->upsertCourse(self::SLUG, [
                 'title' => 'Neural OS — My Learning Framework',
                 'subtitle' => 'The personal learning operating system as a guided, drillable path — encode, retain, automate, measure.',
                 'description' => 'A guided pass through the framework, ordered for building fluency: understand why '
@@ -86,46 +84,13 @@ class NeuralOsCourseSeeder extends Seeder
                 'domain_id' => $anchor?->domain_id,
                 'status' => Course::STATUS_PUBLISHED,
                 'sort' => 0,
-            ]);
-
-            $pages = Page::public()->pluck('id', 'slug');
-            $missing = [];
-            $lessonCount = 0;
-
-            foreach ($this->curriculum() as $mi => $row) {
-                [$title, $summary, $slugs] = $row;
-                $optional = ($row[3] ?? null) === 'optional';
-
-                $module = $course->modules()->create([
-                    'title' => $title,
-                    'summary' => $summary,
-                    'sort' => $mi,
-                ]);
-
-                foreach ($slugs as $li => $slug) {
-                    $pageId = $pages->get($slug);
-                    if (! $pageId) {
-                        $missing[] = $slug;
-
-                        continue;
-                    }
-
-                    Lesson::create([
-                        'module_id' => $module->id,
-                        'page_id' => $pageId,
-                        'title' => Page::whereKey($pageId)->value('title'),
-                        'optional' => $optional,
-                        'sort' => $li,
-                    ]);
-                    $lessonCount++;
-                }
-            }
+            ], $this->curriculum());
 
             $this->command?->info("Seeded published course '".self::SLUG."': "
-                .$course->modules()->count()." modules, {$lessonCount} lessons.");
+                .$result['course']->modules()->count()." modules, {$result['lessons']} lessons.");
 
-            if ($missing !== []) {
-                $this->command?->warn('  Skipped '.count($missing).' unpublished/missing pages: '.implode(', ', $missing));
+            if ($result['missing'] !== []) {
+                $this->command?->warn('  Skipped '.count($result['missing']).' unpublished/missing pages: '.implode(', ', $result['missing']));
             }
         });
     }

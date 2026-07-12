@@ -3,9 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\Course;
-use App\Models\Lesson;
 use App\Models\Page;
-use App\Support\KnowledgeLadder;
+use Database\Seeders\Concerns\UpsertsCourseCurriculum;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -15,12 +14,16 @@ use Illuminate\Support\Facades\DB;
  * This is what the `courses:scaffold` draft becomes after an editor prunes it —
  * captured as a reproducible seeder (the courses layer's answer to
  * `wiki:publish-starter`). Lessons point at the already-published `programming/`
- * DSA atlas pages. Idempotent: re-running rebuilds the modules/lessons in place.
+ * DSA atlas pages. Idempotent AND enrollment-safe: the curriculum is upserted
+ * in place (course by slug, modules by title, lessons by page), so re-running
+ * never touches enrollments, lesson completions, or gym-item module tags.
  *
  *   ./run php artisan db:seed --class=DsaCourseSeeder
  */
 class DsaCourseSeeder extends Seeder
 {
+    use UpsertsCourseCurriculum;
+
     private const SLUG = 'dsa';
 
     /**
@@ -77,11 +80,11 @@ class DsaCourseSeeder extends Seeder
         $roadmap = Page::where('slug', 'dsa-roadmap')->first();
 
         DB::transaction(function () use ($roadmap) {
-            // Drop the rough scaffold demo + any prior run of this seeder.
-            Course::whereIn('slug', [self::SLUG, 'dsa-roadmap'])->get()->each->delete();
+            // Drop the pre-courses-layer scaffold demo if it's still around —
+            // a separate course, not the one being upserted.
+            Course::where('slug', 'dsa-roadmap')->get()->each->delete();
 
-            $course = Course::create([
-                'slug' => self::SLUG,
+            $result = $this->upsertCourse(self::SLUG, [
                 'title' => 'Data Structures & Algorithms',
                 'subtitle' => 'From Big-O to graph algorithms — the published DSA atlas as a guided, drillable path.',
                 'description' => "A complete pass through the classic DSA curriculum, ordered for building fluency: "
@@ -92,49 +95,13 @@ class DsaCourseSeeder extends Seeder
                 'domain_id' => $roadmap?->domain_id,
                 'status' => Course::STATUS_PUBLISHED,
                 'sort' => 0,
-            ]);
-
-            $pages = Page::public()->pluck('id', 'slug');
-            $missing = [];
-            $lessonCount = 0;
-
-            foreach ($this->curriculum() as $mi => $row) {
-                [$title, $summary, $slugs] = $row;
-                $flags = array_slice($row, 3);
-                $optional = in_array('optional', $flags, true);
-                $targetRung = collect($flags)->first(fn ($v) => is_int($v)) ?? KnowledgeLadder::DEFAULT_TARGET;
-
-                $module = $course->modules()->create([
-                    'title' => $title,
-                    'summary' => $summary,
-                    'target_rung' => $targetRung,
-                    'sort' => $mi,
-                ]);
-
-                foreach ($slugs as $li => $slug) {
-                    $pageId = $pages->get($slug);
-                    if (! $pageId) {
-                        $missing[] = $slug;
-
-                        continue;
-                    }
-
-                    Lesson::create([
-                        'module_id' => $module->id,
-                        'page_id' => $pageId,
-                        'title' => Page::whereKey($pageId)->value('title'),
-                        'optional' => $optional,
-                        'sort' => $li,
-                    ]);
-                    $lessonCount++;
-                }
-            }
+            ], $this->curriculum());
 
             $this->command?->info("Seeded published course '".self::SLUG."': "
-                .$course->modules()->count()." modules, {$lessonCount} lessons.");
+                .$result['course']->modules()->count()." modules, {$result['lessons']} lessons.");
 
-            if ($missing !== []) {
-                $this->command?->warn('  Skipped '.count($missing).' unpublished/missing pages: '.implode(', ', $missing));
+            if ($result['missing'] !== []) {
+                $this->command?->warn('  Skipped '.count($result['missing']).' unpublished/missing pages: '.implode(', ', $result['missing']));
             }
         });
     }

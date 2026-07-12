@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\Course;
-use App\Models\Lesson;
 use App\Models\Page;
+use Database\Seeders\Concerns\UpsertsCourseCurriculum;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -21,6 +21,8 @@ use Illuminate\Support\Facades\DB;
  */
 class GraphTheoryCourseSeeder extends Seeder
 {
+    use UpsertsCourseCurriculum;
+
     private const SLUG = 'graph-theory';
 
     /** Each module: [title, summary, lesson-slugs]. */
@@ -103,10 +105,7 @@ class GraphTheoryCourseSeeder extends Seeder
         $roadmap = Page::where('slug', 'graph-theory-overview')->first();
 
         DB::transaction(function () use ($roadmap) {
-            Course::where('slug', self::SLUG)->get()->each->delete();
-
-            $course = Course::create([
-                'slug' => self::SLUG,
+            $result = $this->upsertCourse(self::SLUG, [
                 'title' => 'Graph Theory',
                 'subtitle' => 'The connectivity-first path through the graph-theory atlas — every lesson shown four+ ways.',
                 'description' => 'A guided pass through the graph-theory cluster, ordered for fluency: what a graph is '
@@ -117,35 +116,7 @@ class GraphTheoryCourseSeeder extends Seeder
                 'domain_id' => $roadmap?->domain_id,
                 'status' => Course::STATUS_PUBLISHED,
                 'sort' => 1,
-            ]);
-
-            $pages = Page::public()->pluck('id', 'slug');
-            $missing = [];
-            $lessonCount = 0;
-
-            foreach ($this->curriculum() as $mi => $row) {
-                [$title, $summary, $slugs] = $row;
-                $optional = ($row[3] ?? null) === 'optional';
-
-                $module = $course->modules()->create(['title' => $title, 'summary' => $summary, 'sort' => $mi]);
-
-                foreach ($slugs as $li => $slug) {
-                    $pageId = $pages->get($slug);
-                    if (! $pageId) {
-                        $missing[] = $slug;
-
-                        continue;
-                    }
-                    Lesson::create([
-                        'module_id' => $module->id,
-                        'page_id' => $pageId,
-                        'title' => Page::whereKey($pageId)->value('title'),
-                        'optional' => $optional,
-                        'sort' => $li,
-                    ]);
-                    $lessonCount++;
-                }
-            }
+            ], $this->curriculum());
 
             // Curated frozen scenes for the hero pages.
             $scened = 0;
@@ -154,9 +125,9 @@ class GraphTheoryCourseSeeder extends Seeder
             }
 
             $this->command?->info("Seeded published course '".self::SLUG."': "
-                .$course->modules()->count()." modules, {$lessonCount} lessons, {$scened} curated scenes.");
-            if ($missing !== []) {
-                $this->command?->warn('  Skipped '.count($missing).' unpublished/missing pages: '.implode(', ', $missing));
+                .$result['course']->modules()->count()." modules, {$result['lessons']} lessons, {$scened} curated scenes.");
+            if ($result['missing'] !== []) {
+                $this->command?->warn('  Skipped '.count($result['missing']).' unpublished/missing pages: '.implode(', ', $result['missing']));
             }
         });
     }

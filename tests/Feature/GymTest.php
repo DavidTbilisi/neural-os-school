@@ -250,14 +250,13 @@ class GymTest extends TestCase
             $gym->items()->where('sort', 0)->first()->module->title,
         );
 
-        // A course re-seed churns module IDs and nulls the tags (FK set-null)…
+        // Course seeders upsert modules in place, so a course re-seed leaves
+        // item IDs AND module tags untouched — no re-tagging needed.
         $itemIdsBefore = $gym->items()->orderBy('sort')->pluck('id');
+        $moduleIdsBefore = $gym->items()->orderBy('sort')->pluck('module_id');
         $this->seed(DsaCourseSeeder::class);
-        $this->assertSame(20, GymItem::whereNull('module_id')->count());
-
-        // …and re-running the gym seeder restores them (by title), non-destructively.
-        $this->seed(GymSeeder::class);
-        $this->assertSame(0, $gym->items()->whereNull('module_id')->count());
+        $this->assertSame(0, GymItem::whereNull('module_id')->count());
         $this->assertEquals($itemIdsBefore, $gym->items()->orderBy('sort')->pluck('id'));
+        $this->assertEquals($moduleIdsBefore, $gym->items()->orderBy('sort')->pluck('module_id'));
     }
 }

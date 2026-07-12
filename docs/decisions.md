@@ -213,3 +213,12 @@ Step 5 of evidence-based module coverage, and the long-deferred SRS slice's seed
 - **`srs:backfill`** rebuilds all schedules by replaying attempt history chronologically (rebuild-from-scratch, converges on re-run).
 - ⚠ **Hazard surfaced en route**: `DsaCourseSeeder` deletes + recreates the course, which cascade-wipes learner `enrollments` (and lesson completions) — fine while the only learner is the admin, but it must become a true in-place upsert before real learners exist. Not fixed in this slice.
 - Next steps (deferred): execution/retrieval gym modes for rungs 2/8/9; make course seeders enrollment-safe.
+
+## Enrollment-safe course seeders — DONE (2026-07-12)
+
+The hazard flagged in the SRS slice, fixed at the root: all four course seeders (DSA, Neural OS, Graph Theory, Comprehension) shared the delete+recreate pattern that cascade-wiped enrollments and lesson completions and churned module IDs. Verified by `CourseSeederSafetyTest` (101 tests pass total) + re-running all four seeders on the dev DB (enrollment, 20 gym tags, 20 SRS cards, course + module IDs all bit-for-bit unchanged).
+
+- **One shared trait**, `Database\Seeders\Concerns\UpsertsCourseCurriculum::upsertCourse()`, replaces each seeder's hand-rolled materialization. Identity keys: **course by slug, modules by title, lessons by page** — lessons are looked up course-wide, so a lesson moved between modules keeps its id and its completions. Whatever leaves the curriculum is pruned (renaming a module is re-authoring — its row goes); flags (`'optional'`, int target rung) update in place.
+- **Consequences**: `enrollments`/`lesson_completions` survive re-seeds; gym-item module tags survive too (module IDs stable), so GymSeeder's re-tag-after-reseed ritual is no longer needed — `GymTest` now asserts tags *survive* a course re-seed instead of asserting the churn. DsaCourseSeeder still drops the old `dsa-roadmap` scaffold demo (a different course).
+- The seeder remains authoritative over its curriculum: hand-added lessons inside a seeder-managed course are pruned on re-seed, same as before.
+- Next steps (deferred): execution/retrieval gym modes for rungs 2/8/9.
