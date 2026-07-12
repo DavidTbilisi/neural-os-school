@@ -229,7 +229,7 @@ class CoursesTest extends TestCase
     }
 
     /** Drill telemetry: sessions × attempts at a given accuracy (coverage reads gym_attempts). */
-    private function drill(User $u, Gym $gym, int $sessions, int $perSession, float $accuracy): void
+    private function drill(User $u, Gym $gym, int $sessions, int $perSession, float $accuracy, int $latencyMs = 1000): void
     {
         $item = $gym->items->first();
         for ($s = 0; $s < $sessions; $s++) {
@@ -238,7 +238,7 @@ class CoursesTest extends TestCase
                 $correct = $i < (int) round($perSession * $accuracy);
                 GymAttempt::create([
                     'gym_session_id' => $session->id, 'gym_item_id' => $item->id,
-                    'selected' => $correct ? 'A' : 'B', 'is_correct' => $correct, 'latency_ms' => 1000,
+                    'selected' => $correct ? 'A' : 'B', 'is_correct' => $correct, 'latency_ms' => $latencyMs,
                 ]);
             }
         }
@@ -306,13 +306,58 @@ class CoursesTest extends TestCase
 
         $learner = User::factory()->create(['role' => UserRole::Learner]);
         $this->actingAs($learner);
-        $this->drill($learner, $gym, sessions: 2, perSession: 8, accuracy: 0.75); // pass is .80
+        $this->drill($learner, $gym, sessions: 2, perSession: 8, accuracy: 0.75); // pass is .80 → rung 3
 
         Livewire::test(ShowCourse::class, ['slug' => 'miss-course'])
             ->call('enroll')
             ->call('toggleLesson', $l1->id)
-            ->assertSee('75%')
-            ->assertSee('pass is 80%');
+            ->assertSee('L3 — target is L4 Classifiable');
+
+        $this->assertNull(Enrollment::firstWhere('course_id', $course->id)->completed_at);
+    }
+
+    public function test_a_reflex_module_demands_speed_as_well_as_accuracy(): void
+    {
+        $course = $this->course('reflex-course');
+        $m1 = $course->modules()->create(['title' => 'M1', 'target_rung' => 7, 'sort' => 0]);
+        $l1 = $this->lesson($m1, 'reflex-lesson');
+        $gym = $this->instrument($course, $m1); // latency target 6000ms
+
+        $learner = User::factory()->create(['role' => UserRole::Learner]);
+        $this->actingAs($learner);
+
+        // Perfect accuracy but slow → rung 5 Operational, short of Reflexive.
+        $this->drill($learner, $gym, sessions: 2, perSession: 6, accuracy: 1.0, latencyMs: 8000);
+
+        Livewire::test(ShowCourse::class, ['slug' => 'reflex-course'])
+            ->call('enroll')
+            ->call('toggleLesson', $l1->id)
+            ->assertSee('L5 — target is L7 Reflexive');
+        $this->assertNull(Enrollment::firstWhere('course_id', $course->id)->completed_at);
+
+        // Enough fast reps pull the median under the target → gate opens.
+        $this->drill($learner, $gym, sessions: 2, perSession: 14, accuracy: 1.0, latencyMs: 1000);
+
+        Livewire::test(ShowCourse::class, ['slug' => 'reflex-course'])
+            ->assertSee('✓ Covered · L7');
+        $this->assertNotNull(Enrollment::firstWhere('course_id', $course->id)->completed_at);
+    }
+
+    public function test_a_target_beyond_the_gym_ceiling_reads_uncertifiable(): void
+    {
+        $course = $this->course('deep-course');
+        $m1 = $course->modules()->create(['title' => 'M1', 'target_rung' => 8, 'sort' => 0]); // Transferable
+        $l1 = $this->lesson($m1, 'deep-lesson');
+        $gym = $this->instrument($course, $m1);
+
+        $learner = User::factory()->create(['role' => UserRole::Learner]);
+        $this->actingAs($learner);
+        $this->drill($learner, $gym, sessions: 2, perSession: 6, accuracy: 1.0); // best a drill can show: rung 7
+
+        Livewire::test(ShowCourse::class, ['slug' => 'deep-course'])
+            ->call('enroll')
+            ->call('toggleLesson', $l1->id)
+            ->assertSee('needs a deeper instrument');
 
         $this->assertNull(Enrollment::firstWhere('course_id', $course->id)->completed_at);
     }

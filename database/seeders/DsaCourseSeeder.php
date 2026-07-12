@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\Page;
+use App\Support\KnowledgeLadder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -23,9 +24,10 @@ class DsaCourseSeeder extends Seeder
     private const SLUG = 'dsa';
 
     /**
-     * The curriculum. Each module is [title, summary, lessons(slugs)]; a module
-     * flagged 'optional' contributes its lessons as non-required (drills/decks
-     * excluded from progress %).
+     * The curriculum. Each module is [title, summary, lessons(slugs)]; trailing
+     * elements may be the string 'optional' (lessons contribute as non-required,
+     * excluded from progress %) and/or an int target rung on the Knowledge
+     * Ladder (defaults to 4 Classifiable — see KnowledgeLadder::DEFAULT_TARGET).
      */
     private function curriculum(): array
     {
@@ -55,9 +57,12 @@ class DsaCourseSeeder extends Seeder
                 'bfs', 'dfs', 'topological-sort', 'dijkstra', 'bellman-ford',
                 'floyd-warshall', 'a-star', 'kruskal-prim', 'tarjans-scc',
             ]],
+            // Target rung 7 (Reflexive): this is the module the Algorithm Pattern
+            // Gym exists for — naming the pattern fast IS the competency, so
+            // covered means accurate under the gym's latency target, not just accurate.
             ['Coding Patterns', 'Reusable scan techniques that turn O(n²) brute force into O(n).', [
                 'two-pointer', 'fast-slow-pointer', 'sliding-window', 'prefix-sum',
-            ]],
+            ], 7],
             ['Strings, Math & Hardness', 'String matching, number-theory tools, and the limits of tractability.', [
                 'kmp', 'sieve-of-eratosthenes', 'fast-exponentiation', 'fft', 'np-completeness',
             ]],
@@ -95,11 +100,14 @@ class DsaCourseSeeder extends Seeder
 
             foreach ($this->curriculum() as $mi => $row) {
                 [$title, $summary, $slugs] = $row;
-                $optional = ($row[3] ?? null) === 'optional';
+                $flags = array_slice($row, 3);
+                $optional = in_array('optional', $flags, true);
+                $targetRung = collect($flags)->first(fn ($v) => is_int($v)) ?? KnowledgeLadder::DEFAULT_TARGET;
 
                 $module = $course->modules()->create([
                     'title' => $title,
                     'summary' => $summary,
+                    'target_rung' => $targetRung,
                     'sort' => $mi,
                 ]);
 

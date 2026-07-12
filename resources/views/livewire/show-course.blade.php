@@ -103,13 +103,15 @@
                         @php($ev = $moduleEvidence[$module->id] ?? null)
                         @if ($ev)
                             @if ($ev['covered'])
-                                <span class="shrink-0 text-xs rounded-full border border-success text-success-fg px-2 py-0.5">✓ Covered</span>
+                                <span class="shrink-0 text-xs rounded-full border border-success text-success-fg px-2 py-0.5" title="Target L{{ $ev['targetRung']['level'] }} {{ $ev['targetRung']['name'] }}: {{ $ev['targetRung']['standard'] }}">✓ Covered · L{{ $ev['targetRung']['level'] }}</span>
+                            @elseif (! $ev['certifiable'])
+                                <span class="shrink-0 text-xs rounded-full bg-surface-sunken text-muted px-2 py-0.5" title="L{{ $ev['targetRung']['level'] }} {{ $ev['targetRung']['name'] }} ({{ $ev['targetRung']['standard'] }}) is beyond a timed recognition drill">target L{{ $ev['targetRung']['level'] }} — needs a deeper instrument</span>
                             @elseif ($ev['insufficient'])
                                 <span class="shrink-0 text-xs rounded-full bg-surface-sunken text-muted px-2 py-0.5" title="Coverage needs ≥{{ \App\Services\Meter\Report::MIN_SIGNAL }} drill reps">🏋 {{ $ev['n'] }}/{{ \App\Services\Meter\Report::MIN_SIGNAL }} reps</span>
                             @elseif (! $ev['sustained'])
                                 <span class="shrink-0 text-xs rounded-full bg-surface-sunken text-muted px-2 py-0.5" title="Coverage must hold across ≥{{ \App\Services\Meter\Report::MIN_SESSIONS }} sessions">🏋 one more session</span>
                             @else
-                                <span class="shrink-0 text-xs rounded-full bg-warning-subtle text-warning-fg px-2 py-0.5" title="Rolling accuracy vs the gym's pass bar">🏋 {{ round($ev['accuracy'] * 100) }}% — pass is {{ round($ev['pass'] * 100) }}%</span>
+                                <span class="shrink-0 text-xs rounded-full bg-warning-subtle text-warning-fg px-2 py-0.5" title="{{ round($ev['accuracy'] * 100) }}% accuracy · median {{ $ev['medianLatencyMs'] ? number_format($ev['medianLatencyMs'] / 1000, 1).'s' : '—' }} · target: {{ $ev['targetRung']['standard'] }}">🏋 L{{ $ev['rung']['level'] }} — target is L{{ $ev['targetRung']['level'] }} {{ $ev['targetRung']['name'] }}</span>
                             @endif
                         @endif
                     </div>

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\CourseResource\RelationManagers;
 
 use App\Models\Page;
+use App\Support\KnowledgeLadder;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -23,6 +24,14 @@ class ModulesRelationManager extends RelationManager
                 ->maxLength(200),
             Forms\Components\Textarea::make('summary')
                 ->rows(2),
+            Forms\Components\Select::make('target_rung')
+                ->label('Target rung')
+                ->options(collect(KnowledgeLadder::all())
+                    ->mapWithKeys(fn (array $r) => [$r['level'] => "L{$r['level']} · {$r['name']} — {$r['standard']}"]))
+                ->default(KnowledgeLadder::DEFAULT_TARGET)
+                ->required()
+                ->helperText('Coverage evidence must reach this Knowledge Ladder rung for the module to count '
+                    .'as covered. Rungs above L7 exceed what a timed recognition drill can certify.'),
 
             Forms\Components\Repeater::make('lessons')
                 ->relationship()
@@ -73,6 +82,10 @@ class ModulesRelationManager extends RelationManager
             ->defaultSort('sort')
             ->columns([
                 Tables\Columns\TextColumn::make('title')->weight('bold')->wrap(),
+                Tables\Columns\TextColumn::make('target_rung')->label('Target')
+                    ->formatStateUsing(fn ($state) => 'L'.$state.' '.KnowledgeLadder::rung((int) $state)['name'])
+                    ->badge()
+                    ->color(fn ($state) => (int) $state > KnowledgeLadder::GYM_CEILING ? 'warning' : 'gray'),
                 Tables\Columns\TextColumn::make('lessons_count')->label('Lessons')->counts('lessons')->badge(),
                 Tables\Columns\TextColumn::make('summary')->limit(70)->color('gray')->toggleable(),
             ])

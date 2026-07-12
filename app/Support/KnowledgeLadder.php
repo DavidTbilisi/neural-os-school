@@ -39,6 +39,9 @@ final class KnowledgeLadder
 
     public const MAX = 9;
 
+    /** The default per-module target rung: Classifiable, "I know when it applies". */
+    public const DEFAULT_TARGET = 4;
+
     /** The rungs a timed recognition/classification gym can certify (in order). */
     public const GYM_RUNGS = [0, 1, 3, 4, 5, 7];
 

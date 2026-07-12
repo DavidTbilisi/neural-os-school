@@ -199,6 +199,8 @@ class MeterTest extends TestCase
         $this->assertTrue($m['covered']);
         $this->assertSame('target', $m['verdict']['key']);
         $this->assertSame(7, $m['rung']['level']); // accurate + fast → Reflexive
+        $this->assertSame(4, $m['targetRung']['level']); // default target: Classifiable
+        $this->assertTrue($m['certifiable']);
     }
 
     public function test_module_coverage_is_not_covered_from_a_single_session(): void

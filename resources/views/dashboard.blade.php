@@ -166,7 +166,8 @@
                     <p class="text-xs text-gray-500 mb-4">
                         Evidence from drill telemetry, not checkboxes. A module reads as covered ✓ after
                         ≥{{ \App\Services\Meter\Report::MIN_SIGNAL }} reps across
-                        ≥{{ \App\Services\Meter\Report::MIN_SESSIONS }} sessions at pass accuracy.
+                        ≥{{ \App\Services\Meter\Report::MIN_SESSIONS }} sessions at its target rung
+                        (default L{{ \App\Support\KnowledgeLadder::DEFAULT_TARGET }} Classifiable).
                     </p>
                     <div class="space-y-5">
                         @foreach ($report['coverage'] as $cc)
@@ -184,11 +185,13 @@
                                                 {{ $m['title'] }}@if ($m['covered']) <span class="text-emerald-600" title="Covered: sustained pass-accuracy evidence">✓</span>@endif
                                             </span>
                                             <span class="flex items-center gap-2 whitespace-nowrap">
-                                                @if ($m['insufficient'])
-                                                    <span class="text-xs text-gray-400">{{ $m['n'] }}/{{ \App\Services\Meter\Report::MIN_SIGNAL }} reps</span>
+                                                @if (! $m['certifiable'])
+                                                    <span class="text-xs text-amber-600" title="{{ $m['targetRung']['standard'] }} — beyond a timed recognition drill">target L{{ $m['targetRung']['level'] }} · needs a deeper instrument</span>
+                                                @elseif ($m['insufficient'])
+                                                    <span class="text-xs text-gray-400">{{ $m['n'] }}/{{ \App\Services\Meter\Report::MIN_SIGNAL }} reps · target L{{ $m['targetRung']['level'] }}</span>
                                                 @else
                                                     <span class="text-xs text-gray-500">
-                                                        {{ round($m['accuracy'] * 100) }}% · n={{ $m['n'] }} · {{ $m['sessions'] }} {{ Str::plural('session', $m['sessions']) }}@if ($m['rung']) · L{{ $m['rung']['level'] }} {{ $m['rung']['name'] }}@endif
+                                                        {{ round($m['accuracy'] * 100) }}% · n={{ $m['n'] }} · {{ $m['sessions'] }} {{ Str::plural('session', $m['sessions']) }}@if ($m['rung']) · L{{ $m['rung']['level'] }} {{ $m['rung']['name'] }}@endif · target L{{ $m['targetRung']['level'] }}
                                                     </span>
                                                 @endif
                                                 <span class="text-xs rounded-full px-2 py-0.5 {{ $tone($m['verdict']['tone']) }}">{{ $m['verdict']['label'] }}</span>

@@ -236,6 +236,17 @@ class Report
         $insufficient = $n < self::MIN_SIGNAL;
         $sustained = $sessions >= self::MIN_SESSIONS;
 
+        // The bar: evidence must reach the module's target rung. The achieved
+        // rung comes from the same accuracy+latency mapping every gym session
+        // uses; at the default target (4 Classifiable) this is exactly the old
+        // accuracy ≥ pass rule. Targets above the gym ceiling (7) can't be
+        // certified by a timed recognition drill — `certifiable` goes false
+        // rather than the gate pretending more reps could ever close it.
+        $targetRung = (int) ($module->target_rung ?? KnowledgeLadder::DEFAULT_TARGET);
+        $achieved = (! $insufficient && $gym)
+            ? KnowledgeLadder::levelForGym($gym, $accuracy, $median)
+            : null;
+
         return [
             'title' => $module->title,
             'n' => $n,
@@ -247,10 +258,10 @@ class Report
             'insufficient' => $insufficient,
             'sustained' => $sustained,
             'verdict' => self::verdict($n, $accuracy ?? 0.0, $target, $working, $floor),
-            'rung' => ($insufficient || ! $gym)
-                ? null
-                : KnowledgeLadder::rung(KnowledgeLadder::levelForGym($gym, $accuracy, $median)),
-            'covered' => ! $insufficient && $sustained && $accuracy >= $working,
+            'rung' => $achieved !== null ? KnowledgeLadder::rung($achieved) : null,
+            'targetRung' => KnowledgeLadder::rung($targetRung),
+            'certifiable' => $targetRung <= KnowledgeLadder::GYM_CEILING,
+            'covered' => $achieved !== null && $sustained && $achieved >= $targetRung,
         ];
     }
 
