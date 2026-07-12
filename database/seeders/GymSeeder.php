@@ -18,6 +18,12 @@ use Illuminate\Support\Facades\DB;
  * Idempotent and non-destructive: the gym row is upserted and items are upserted
  * by `sort` (IDs preserved, so existing sessions/attempts stay valid); only tail
  * items are removed if the curriculum shrinks.
+ *
+ * Each item is tagged with the DSA course module it exercises, so telemetry can
+ * be scoped per module (the seed of evidence-based module coverage). Tags are
+ * resolved by module *title* because course re-seeds rebuild modules with fresh
+ * IDs — seed this after DsaCourseSeeder, and re-run it after a course re-seed
+ * to restore the tags.
  */
 class GymSeeder extends Seeder
 {
@@ -26,8 +32,9 @@ class GymSeeder extends Seeder
     public function run(): void
     {
         $course = Course::where('slug', 'dsa')->first();
+        $modules = $course ? $course->modules()->pluck('id', 'title') : collect();
 
-        DB::transaction(function () use ($course) {
+        DB::transaction(function () use ($course, $modules) {
             $gym = Gym::updateOrCreate(['slug' => self::SLUG], [
                 'title' => 'Algorithm Pattern Gym',
                 'subtitle' => 'Read a problem, name the pattern in 8 seconds.',
@@ -66,101 +73,124 @@ class GymSeeder extends Seeder
                         'choices' => $item[2],
                         'explanation' => $item[3],
                         'detail' => $item[4],
+                        'module_id' => $modules->get($item[5]),
                     ],
                 );
             }
             // Drop only the tail if the curriculum shrank (positions no longer present).
             $gym->items()->where('sort', '>=', count($items))->delete();
 
-            $this->command?->info('Seeded gym "'.self::SLUG.'": '.$gym->items()->count().' items'
+            $tagged = $gym->items()->whereNotNull('module_id')->count();
+            $this->command?->info('Seeded gym "'.self::SLUG.'": '.$gym->items()->count()
+                ." items, {$tagged} tagged to modules"
                 .($course ? " (linked to course '{$course->slug}')" : ' (no DSA course found to link)'));
         });
     }
 
-    /** @return list<array{0:string,1:string,2:array<string>,3:string,4:string}> prompt, correct, choices, explanation, near-miss */
+    /** @return list<array{0:string,1:string,2:array<string>,3:string,4:string,5:string}> prompt, correct, choices, explanation, near-miss, DSA module title */
     private function items(): array
     {
         return [
             ['Given an UNSORTED array, return the indices of two numbers that add to a target.',
                 'Hashmap', ['Hashmap', 'Two Pointers', 'Binary Search', 'Sliding Window'],
                 'Store value→index in a hashmap. For each x, look up target − x. O(n) time, O(n) space.',
-                'Two Pointers needs sorted input; sorting would lose the original indices the problem asks for.'],
+                'Two Pointers needs sorted input; sorting would lose the original indices the problem asks for.',
+                'Hashing, Heaps & Caches'],
             ['Given a SORTED array, find a pair that sums to a target.',
                 'Two Pointers', ['Two Pointers', 'Hashmap', 'Binary Search', 'Sliding Window'],
                 'L and R converge from edges. If sum < target, advance L; if sum > target, retreat R.',
-                'Hashmap works but uses O(n) space. Two Pointers is O(1) space — pick this when sorted.'],
+                'Hashmap works but uses O(n) space. Two Pointers is O(1) space — pick this when sorted.',
+                'Coding Patterns'],
             ['Find the longest substring of a string that contains no repeated characters.',
                 'Sliding Window', ['Sliding Window', 'Hashmap', 'Two Pointers', 'DP'],
                 'Variable window. Expand R; if a duplicate enters, contract L past the previous occurrence. Track max length.',
-                'Hashmap is the helper inside the window. The structural pattern is the contiguous expanding/contracting window.'],
+                'Hashmap is the helper inside the window. The structural pattern is the contiguous expanding/contracting window.',
+                'Coding Patterns'],
             ['Find a peak element in an array (greater than both neighbors) in O(log n) — array is NOT sorted.',
                 'Binary Search', ['Binary Search', 'Two Pointers', 'Linear Scan', 'DFS'],
                 'Compare nums[mid] to nums[mid+1]; the side with the larger neighbor must contain a peak. Halve each step.',
-                "Linear scan is O(n). The O(log n) requirement forces binary search even though the array isn't fully sorted."],
+                "Linear scan is O(n). The O(log n) requirement forces binary search even though the array isn't fully sorted.",
+                'Sorting & Searching'],
             ['Rotting oranges in a grid: every minute, fresh oranges adjacent to a rotten one become rotten. Return minutes until all rotten.',
                 'BFS', ['BFS', 'DFS', 'DP', 'Greedy'],
                 'Multi-source BFS — start with all rotten oranges in the queue at time 0, then expand layer-by-layer.',
-                "DFS doesn't track minutes uniformly across sources. The synchronous layer expansion is what makes BFS correct."],
+                "DFS doesn't track minutes uniformly across sources. The synchronous layer expansion is what makes BFS correct.",
+                'Graph Algorithms'],
             ['Given edges of an UNDIRECTED graph arriving one at a time, detect the FIRST edge that creates a cycle.',
                 'Union-Find', ['Union-Find', 'BFS', 'DFS', 'Topological Sort'],
                 'For each edge (u,v): if find(u) == find(v), this edge closes a cycle. Otherwise union(u,v).',
-                'BFS/DFS detect cycles in a built graph. UF is the canonical pattern for streaming/incremental edges.'],
+                'BFS/DFS detect cycles in a built graph. UF is the canonical pattern for streaming/incremental edges.',
+                'Trees & Disjoint Sets'],
             ['Find the K most frequent elements in a large unsorted array of n integers (k ≪ n).',
                 'Heap', ['Heap', 'Sorting', 'Hashmap', 'Quickselect'],
                 'Count via hashmap, then maintain a min-heap of size k over (count, value) pairs. O(n log k).',
-                "Full sort is O(n log n). Heap of size k beats it when k ≪ n. Quickselect is O(n) but doesn't generalize to streaming."],
+                "Full sort is O(n log n). Heap of size k beats it when k ≪ n. Quickselect is O(n) but doesn't generalize to streaming.",
+                'Hashing, Heaps & Caches'],
             ['You have an isBad(v) check. Versions become bad at some point and stay bad. Find the FIRST bad version.',
                 'Binary Search', ['Binary Search', 'Linear Scan', 'Two Pointers', 'DFS'],
                 "Monotonic predicate — 'first true' template. lo<hi; if isBad(mid), hi=mid; else lo=mid+1.",
-                'Linear scan is O(n). The monotonic property of the predicate is what unlocks O(log n) binary search.'],
+                'Linear scan is O(n). The monotonic property of the predicate is what unlocks O(log n) binary search.',
+                'Sorting & Searching'],
             ["For each day's temperature, return how many days until a WARMER day (or 0 if none).",
                 'Monotonic Stack', ['Monotonic Stack', 'Two Pointers', 'Brute Force', 'Sliding Window'],
                 'Maintain a stack of indices with decreasing temperatures. When today > stack top, pop and resolve that index.',
-                "Two Pointers has no L/R convergence here. Brute Force is O(n²). The 'next greater' shape is a textbook monotonic stack."],
+                "Two Pointers has no L/R convergence here. Brute Force is O(n²). The 'next greater' shape is a textbook monotonic stack.",
+                'Linear Data Structures'],
             ['Largest rectangle area in a histogram (each bar has width 1, given heights).',
                 'Monotonic Stack', ['Monotonic Stack', 'DP', 'Two Pointers', 'Binary Search'],
                 'Increasing monotonic stack of indices. When a smaller bar arrives, pop and compute the rectangle bounded by the popped bar.',
-                'DP solutions exist but are O(n²) without the stack insight. Stack gives clean O(n).'],
+                'DP solutions exist but are O(n²) without the stack insight. Stack gives clean O(n).',
+                'Linear Data Structures'],
             ['Coin change: minimum number of coins to make a target amount, given coin denominations [1, 3, 4].',
                 'DP 1D', ['DP 1D', 'Greedy', 'BFS', 'Backtracking'],
                 'dp[a] = 1 + min(dp[a − c] for c in coins, if a ≥ c). Build bottom-up from 0 to amount.',
-                'Greedy fails on [1,3,4] for amount 6: greedy picks 4+1+1=3 coins; DP finds 3+3=2 coins.'],
+                'Greedy fails on [1,3,4] for amount 6: greedy picks 4+1+1=3 coins; DP finds 3+3=2 coins.',
+                'Design Paradigms'],
             ['Given two strings, find the minimum number of insert/delete/replace operations to convert one to the other.',
                 'DP 2D', ['DP 2D', 'Recursion', 'Backtracking', 'BFS'],
                 'dp[i][j] = edit distance between s[0..i] and t[0..j]. Three transitions: match/replace/insert/delete.',
-                'Plain recursion is exponential due to overlapping subproblems. The 2D state grid is the cure.'],
+                'Plain recursion is exponential due to overlapping subproblems. The 2D state grid is the cure.',
+                'Design Paradigms'],
             ['Generate ALL subsets of a given set of distinct integers.',
                 'Backtracking', ['Backtracking', 'DP', 'BFS', 'Recursion only'],
                 "For each element, branch 'include' or 'skip'. Record the partial set at each step (or only at length n).",
-                "DP can count subsets but doesn't enumerate them. Backtracking explicitly builds and records each."],
+                "DP can count subsets but doesn't enumerate them. Backtracking explicitly builds and records each.",
+                'Design Paradigms'],
             ['Detect a cycle in a DIRECTED graph.',
                 'DFS', ['DFS', 'BFS', 'Union-Find', 'Backtracking'],
                 'DFS with white/gray/black coloring. A gray-revisit means a back edge → cycle.',
-                "Union-Find handles undirected graphs only. BFS needs in-degree tracking (Kahn's) to do the same job."],
+                "Union-Find handles undirected graphs only. BFS needs in-degree tracking (Kahn's) to do the same job.",
+                'Graph Algorithms'],
             ['Find the MEDIAN of a stream of integers — supports addNum(x) and findMedian() with many calls.',
                 'Heap', ['Heap', 'Sorted Insert', 'BST', 'Sliding Window'],
                 'Two heaps — max-heap for the lower half, min-heap for the upper half. Median is top of one (or average of tops).',
-                'Sorted insert is O(n) per addNum. BST works but two-heaps is the canonical interview answer.'],
+                'Sorted insert is O(n) per addNum. BST works but two-heaps is the canonical interview answer.',
+                'Hashing, Heaps & Caches'],
             ['Find the maximum sum of any contiguous subarray (numbers may be negative).',
                 'DP 1D', ['DP 1D', 'Sliding Window', 'Two Pointers', 'Brute Force'],
                 "Kadane's: dp[i] = max(nums[i], dp[i-1] + nums[i]). Track running max of dp.",
-                "Sliding Window assumes positive numbers — with negatives the window can't slide cleanly. Kadane handles negatives."],
+                "Sliding Window assumes positive numbers — with negatives the window can't slide cleanly. Kadane handles negatives.",
+                'Design Paradigms'],
             ["Word ladder: transform 'hit' → 'cog' by changing one letter at a time. Each intermediate word must be in a dictionary. Find SHORTEST sequence length.",
                 'BFS', ['BFS', 'DFS', 'Dijkstra', 'DP'],
                 'Words are nodes; edges between words differing by one letter. BFS guarantees shortest in unweighted graphs.',
-                "DFS goes deep but doesn't give shortest. Dijkstra is for weighted edges — overkill here."],
+                "DFS goes deep but doesn't give shortest. Dijkstra is for weighted edges — overkill here.",
+                'Graph Algorithms'],
             ['Given the head of a singly linked list, return true if it has a cycle. Use O(1) extra space.',
                 'Two Pointers', ['Two Pointers', 'Hashmap', 'Stack', 'Recursion'],
                 "Floyd's tortoise-and-hare. Slow advances 1, fast advances 2. They meet iff a cycle exists.",
-                'Hashmap solves it in O(n) space. Two Pointers is O(1) space — the canonical answer when O(1) is required.'],
+                'Hashmap solves it in O(n) space. Two Pointers is O(1) space — the canonical answer when O(1) is required.',
+                'Coding Patterns'],
             ['Count contiguous subarrays whose sum equals k (numbers may be negative).',
                 'Hashmap', ['Hashmap', 'Sliding Window', 'Two Pointers', 'Brute Force'],
                 'Prefix sum + hashmap of prefix-count. For each position p, look up how many earlier prefixes equal p − k.',
-                "Sliding Window assumes positive numbers — with negatives, expanding the window doesn't strictly increase the sum."],
+                "Sliding Window assumes positive numbers — with negatives, expanding the window doesn't strictly increase the sum.",
+                'Coding Patterns'],
             ['Validate that a binary tree is a binary search tree (left subtree < node < right subtree, recursively).',
                 'DFS', ['DFS', 'BFS', 'Hashmap', 'Two Pointers'],
                 'Recurse with (min, max) bounds per subtree, OR do an in-order traversal and check that the sequence is strictly increasing.',
-                "BFS visits level-by-level and doesn't naturally enforce the in-order/bounds invariant."],
+                "BFS visits level-by-level and doesn't naturally enforce the in-order/bounds invariant.",
+                'Trees & Disjoint Sets'],
         ];
     }
 }

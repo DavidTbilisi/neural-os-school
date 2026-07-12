@@ -163,3 +163,13 @@ Two layers:
 
 - **PHPUnit feature tests** (`./run php artisan test`) — 70 in-process tests: routing, Livewire components, Filament resources/widgets, auth, roles, visibility, wiki-link resolution, the courses layer (scaffolder, enrollment/progress/completion, soft prerequisites, admin curation), the sketchpad (auth gate, save upsert, ownership isolation, draft visibility), the gym engine (session flow, attempt/session telemetry, stage read, course link), and METER (emit on rep/session/lesson, backfill idempotency, verdict thresholds + insufficient-signal, per-user scoping, dashboard render).
 - **Playwright smoke suite** (`npm run e2e`, `e2e/*.spec.ts`) — 5 real-browser tests (headless chromium on host Node, reuses the container's server): guest reads a page + follows an internal link, live search filters, private page 404s, admin login + lazy dashboard widgets load, admin pages list renders. Config uses `127.0.0.1` (not `localhost`) so the reuse-probe hits pasta's IPv4 listener.
+
+## Module-tagged gym items — DONE (2026-07-12)
+
+Step 1 of evidence-based module coverage: module completion today is an honor-system lesson checkbox; the plan is a per-module METER verdict over gym telemetry (rolling accuracy ≥ `pass_accuracy` with N ≥ 10, sustained across sessions → rung 4 Classifiable), then gating module completion on it. This slice scopes the instrument to the module. Verified by `GymTest` (74 tests pass total).
+
+- **Schema**: nullable `gym_items.module_id` FK (`nullOnDelete`) — migration `2026_07_12_100000_add_module_id_to_gym_items.php`. Null because untagged items stay gym-wide, and course seeders rebuild modules with fresh IDs (a module delete must untag, not destroy, items).
+- **Read side**: `GymItem::module()`, `Module::gymItems()`, and `Module::gymAttempts()` (has-many-through) — the per-module evidence stream a future METER verdict consumes; narrow to one learner via `whereHas('session', …)`.
+- **Seeder**: each of the 20 Algorithm Pattern Gym items is tagged with the DSA module it exercises (7 of 10 modules covered — Foundations, Strings/Math & Hardness, and Practice & Retention have no recognition items). Tags resolve by module *title* at seed time, so re-running `GymSeeder` after a DSA course re-seed restores them; `GymTest` covers the churn → re-tag round-trip.
+- En route: fixed two `GymTest` assertions left stale by the KnowledgeLadder refactor (expected retired `S1`/`S3` stage codes; sessions now record ladder codes `L0`/`L7`).
+- Next steps (deferred): per-module `Report` verdict, module-completion gate in `ShowCourse`, target-rung per module, SRS-based retention evidence.

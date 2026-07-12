@@ -7,8 +7,11 @@ use App\Livewire\PlayGym;
 use App\Models\Course;
 use App\Models\Gym;
 use App\Models\GymAttempt;
+use App\Models\GymItem;
 use App\Models\GymSession;
 use App\Models\User;
+use Database\Seeders\DsaCourseSeeder;
+use Database\Seeders\GymSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -103,7 +106,7 @@ class GymTest extends TestCase
         $this->assertSame(1, $session->correct);
         $this->assertEqualsWithDelta(1 / 3, $session->accuracy, 0.001);
         $this->assertSame(2000, $session->median_latency_ms);  // median of [1200,2000,8000]
-        $this->assertSame('S1', $session->stage_code);         // 33% → lowest stage
+        $this->assertSame('L0', $session->stage_code);         // 33% → below chance → Unknown
 
         // Three attempts logged, including the null (timeout) selection.
         $attempts = GymAttempt::where('gym_session_id', $session->id)->get();
@@ -151,7 +154,7 @@ class GymTest extends TestCase
 
         $session = GymSession::where('user_id', $learner->id)->firstOrFail();
         $this->assertEqualsWithDelta(1.0, $session->accuracy, 0.001);
-        $this->assertSame('S3', $session->stage_code); // 100% → top stage
+        $this->assertSame('L7', $session->stage_code); // 100% + fast → Reflexive (the gym ceiling)
     }
 
     // ---- course link ------------------------------------------------------
@@ -166,5 +169,95 @@ class GymTest extends TestCase
             ->assertOk()
             ->assertSee('Practice')
             ->assertSee(route('gyms.play', 'linked-gym'));
+    }
+
+    // ---- module tagging (per-module evidence) ------------------------------
+
+    public function test_gym_items_can_be_tagged_with_a_module(): void
+    {
+        $course = Course::create(['slug' => 'tag-course', 'title' => 'Tag Course', 'status' => Course::STATUS_PUBLISHED]);
+        $module = $course->modules()->create(['title' => 'Module A', 'sort' => 0]);
+
+        $gym = $this->gym('tag-gym', rounds: 1);
+        $item = $gym->items->first();
+        $item->update(['module_id' => $module->id]);
+
+        $this->assertTrue($item->fresh()->module->is($module));
+        $this->assertTrue($module->gymItems->contains($item));
+    }
+
+    public function test_module_gym_attempts_scopes_attempts_to_tagged_items(): void
+    {
+        $course = Course::create(['slug' => 'scope-course', 'title' => 'Scope Course', 'status' => Course::STATUS_PUBLISHED]);
+        $moduleA = $course->modules()->create(['title' => 'Module A', 'sort' => 0]);
+        $moduleB = $course->modules()->create(['title' => 'Module B', 'sort' => 1]);
+
+        $gym = $this->gym('scope-gym', rounds: 2);
+        [$itemA, $itemB] = $gym->items;
+        $itemA->update(['module_id' => $moduleA->id]);
+        $itemB->update(['module_id' => $moduleB->id]);
+
+        $learner = User::factory()->create(['role' => UserRole::Learner]);
+        $other = User::factory()->create(['role' => UserRole::Learner]);
+
+        foreach ([$learner, $other] as $user) {
+            $session = GymSession::create(['user_id' => $user->id, 'gym_id' => $gym->id]);
+            GymAttempt::create(['gym_session_id' => $session->id, 'gym_item_id' => $itemA->id, 'selected' => 'A', 'is_correct' => true, 'latency_ms' => 1000]);
+            GymAttempt::create(['gym_session_id' => $session->id, 'gym_item_id' => $itemB->id, 'selected' => 'B', 'is_correct' => false, 'latency_ms' => 2000]);
+        }
+
+        // The module sees only attempts on its own items, across learners…
+        $this->assertSame(2, $moduleA->gymAttempts()->count());
+        $this->assertTrue($moduleA->gymAttempts->every(fn ($a) => $a->gym_item_id === $itemA->id));
+
+        // …and narrows to one learner via the session (the per-learner evidence stream).
+        $mine = $moduleA->gymAttempts()
+            ->whereHas('session', fn ($q) => $q->where('user_id', $learner->id))
+            ->get();
+        $this->assertCount(1, $mine);
+        $this->assertTrue($mine->first()->is_correct);
+    }
+
+    public function test_deleting_a_module_untags_items_without_deleting_them(): void
+    {
+        $course = Course::create(['slug' => 'churn-course', 'title' => 'Churn Course', 'status' => Course::STATUS_PUBLISHED]);
+        $module = $course->modules()->create(['title' => 'Module A', 'sort' => 0]);
+
+        $gym = $this->gym('churn-gym', rounds: 1);
+        $item = $gym->items->first();
+        $item->update(['module_id' => $module->id]);
+
+        // Course re-seeds delete modules; the item must survive, merely untagged.
+        $module->delete();
+
+        $this->assertNull($item->fresh()->module_id);
+        $this->assertSame(1, $gym->items()->count());
+    }
+
+    public function test_gym_seeder_tags_items_to_dsa_modules(): void
+    {
+        $this->seed(DsaCourseSeeder::class);
+        $this->seed(GymSeeder::class);
+
+        $gym = Gym::where('slug', 'algorithm-pattern-gym')->firstOrFail();
+        $dsaModuleIds = Course::where('slug', 'dsa')->firstOrFail()->modules->pluck('id');
+
+        $this->assertSame(20, $gym->items()->count());
+        $this->assertSame(0, $gym->items()->whereNull('module_id')->count());
+        $this->assertTrue($gym->items->pluck('module_id')->diff($dsaModuleIds)->isEmpty());
+        $this->assertSame(
+            'Hashing, Heaps & Caches',
+            $gym->items()->where('sort', 0)->first()->module->title,
+        );
+
+        // A course re-seed churns module IDs and nulls the tags (FK set-null)…
+        $itemIdsBefore = $gym->items()->orderBy('sort')->pluck('id');
+        $this->seed(DsaCourseSeeder::class);
+        $this->assertSame(20, GymItem::whereNull('module_id')->count());
+
+        // …and re-running the gym seeder restores them (by title), non-destructively.
+        $this->seed(GymSeeder::class);
+        $this->assertSame(0, $gym->items()->whereNull('module_id')->count());
+        $this->assertEquals($itemIdsBefore, $gym->items()->orderBy('sort')->pluck('id'));
     }
 }

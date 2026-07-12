@@ -19,6 +19,12 @@ class GymItem extends Model
         return $this->belongsTo(Gym::class);
     }
 
+    /** The course module this item exercises (nullable — untagged items are gym-wide). */
+    public function module(): BelongsTo
+    {
+        return $this->belongsTo(Module::class);
+    }
+
     public function isCorrect(?string $choice): bool
     {
         return $choice !== null && $choice === $this->correct;
