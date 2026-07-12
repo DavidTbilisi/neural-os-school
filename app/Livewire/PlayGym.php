@@ -6,20 +6,30 @@ use App\Models\Gym;
 use App\Models\GymAttempt;
 use App\Models\GymItem;
 use App\Models\GymSession;
+use App\Models\SrsCard;
 use App\Support\Meter;
+use App\Support\Srs;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 /**
  * The gym engine: runs one recognition session as a sequence of timed rounds.
  * The Alpine timer/latency in the view calls answer()/timeout(); every attempt
  * and the session summary are logged server-side (the METER telemetry seed).
+ *
+ * Two modes share the engine: 'drill' (random items — first-pass performance)
+ * and 'review' (?mode=review — only SRS-due items, oldest due first; retention
+ * practice). Every attempt in either mode reschedules the item's SRS card.
  */
 #[Layout('layouts.public')]
 class PlayGym extends Component
 {
     public Gym $gym;
+
+    #[Url]
+    public string $mode = 'drill'; // drill | review
 
     /** Shuffled gym_item ids for this run. */
     public array $order = [];
@@ -49,8 +59,15 @@ class PlayGym extends Component
             return;
         }
 
-        $itemIds = $this->gym->items()->pluck('id')->shuffle()
-            ->take($this->gym->round_count)->values()->all();
+        $itemIds = $this->isReview()
+            ? $this->dueCardQuery()->orderBy('due_at')
+                ->limit($this->gym->round_count)->pluck('gym_item_id')->all()
+            : $this->gym->items()->pluck('id')->shuffle()
+                ->take($this->gym->round_count)->values()->all();
+
+        if ($this->isReview() && $itemIds === []) {
+            return; // nothing due — the intro says so instead of starting an empty session
+        }
 
         abort_if($itemIds === [], 404, 'This gym has no items.');
 
@@ -90,6 +107,13 @@ class PlayGym extends Component
         ]);
 
         Meter::gymRep($attempt); // emit the METER rep event
+
+        // Every exposure reschedules the item's retention card; a review rep
+        // additionally lands in the Retrieval layer of the event log.
+        Srs::record((int) auth()->id(), $item, $isCorrect);
+        if ($this->isReview()) {
+            Meter::srsReview($attempt);
+        }
 
         GymSession::whereKey($this->sessionId)->update([
             'total' => $this->session()->total + 1,
@@ -161,6 +185,18 @@ class PlayGym extends Component
         return $this->sessionId ? GymSession::find($this->sessionId) : null;
     }
 
+    public function isReview(): bool
+    {
+        return $this->mode === 'review';
+    }
+
+    /** The learner's due cards on this gym's items. */
+    private function dueCardQuery()
+    {
+        return SrsCard::where('user_id', auth()->id())->due()
+            ->whereIn('gym_item_id', $this->gym->items()->pluck('id'));
+    }
+
     public function render()
     {
         $summary = null;
@@ -187,6 +223,7 @@ class PlayGym extends Component
             'summary' => $summary,
             'ladder' => \App\Support\KnowledgeLadder::all(),
             'gymCeiling' => \App\Support\KnowledgeLadder::GYM_CEILING,
+            'dueCount' => ($this->phase === 'intro' && auth()->check()) ? $this->dueCardQuery()->count() : 0,
         ]);
     }
 

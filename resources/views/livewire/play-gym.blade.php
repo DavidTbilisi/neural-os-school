@@ -9,21 +9,42 @@
     {{-- INTRO ---------------------------------------------------------------}}
     @if ($phase === 'intro')
         <div class="rounded-xl border border-border bg-surface p-6 text-center">
-            <h1 class="font-serif text-3xl font-semibold tracking-tight text-fg">{{ $gym->title }}</h1>
-            @if ($gym->target_reflex)
+            <h1 class="font-serif text-3xl font-semibold tracking-tight text-fg">
+                {{ $gym->title }}@if ($this->isReview()) <span class="text-primary">· Review</span>@endif
+            </h1>
+            @if ($this->isReview())
+                <p class="mt-3 text-muted">Retention pass: only cards whose schedule has ripened — oldest due first.</p>
+            @elseif ($gym->target_reflex)
                 <p class="mt-3 text-muted">{{ $gym->target_reflex }}</p>
             @endif
             <div class="mt-4 flex items-center justify-center gap-3 text-sm text-muted">
-                <span>{{ $rounds ?: $gym->round_count }} rounds</span>
+                @if ($this->isReview())
+                    <span>{{ $dueCount }} {{ Str::plural('card', $dueCount) }} due</span>
+                @else
+                    <span>{{ $rounds ?: $gym->round_count }} rounds</span>
+                @endif
                 <span aria-hidden="true">·</span>
                 <span>{{ $gym->timer_seconds }}s each</span>
                 <span aria-hidden="true">·</span>
                 <span>promote at {{ round($gym->promote_accuracy * 100) }}%</span>
             </div>
-            <button wire:click="start"
-                    class="mt-6 rounded-md bg-primary px-6 py-2.5 text-sm font-semibold text-primary-fg hover:bg-primary-hover">
-                Start session
-            </button>
+            @if ($this->isReview() && $dueCount === 0)
+                <p class="mt-6 text-sm text-muted">Nothing due — the schedule hasn't ripened yet.
+                    <a href="{{ route('gyms.play', $gym->slug) }}" class="text-primary hover:underline">Drill instead →</a>
+                </p>
+            @else
+                <button wire:click="start"
+                        class="mt-6 rounded-md bg-primary px-6 py-2.5 text-sm font-semibold text-primary-fg hover:bg-primary-hover">
+                    {{ $this->isReview() ? 'Start review' : 'Start session' }}
+                </button>
+                @if (! $this->isReview() && $dueCount > 0)
+                    <p class="mt-3 text-sm">
+                        <a href="{{ route('gyms.play', $gym->slug) }}?mode=review" class="text-primary hover:underline">
+                            🔁 {{ $dueCount }} {{ Str::plural('card', $dueCount) }} due for review — do a retention pass instead
+                        </a>
+                    </p>
+                @endif
+            @endif
 
             {{-- Red Queen Knowledge Ladder — what this gym climbs toward. --}}
             <div class="mt-6 border-t border-border pt-5 text-left">

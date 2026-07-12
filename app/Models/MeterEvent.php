@@ -19,6 +19,7 @@ class MeterEvent extends Model
     public const OP_GYM_REP = 'gym-rep';
     public const OP_GYM_SESSION = 'gym-session';
     public const OP_LESSON_COMPLETE = 'lesson-complete';
+    public const OP_SRS_REVIEW = 'srs-review';
 
     protected $guarded = [];
 

@@ -202,3 +202,14 @@ Step 4 of evidence-based module coverage: modules now declare *how well* is well
 - **Curation**: Filament module form gets a Target-rung select (full ladder with standards) + an L-badge table column (amber above the gym ceiling). `DsaCourseSeeder` curriculum rows accept a trailing int rung; **Coding Patterns is set to L7 Reflexive** — the algorithm-pattern gym exists to train exactly that reflex, so covered there means fast, not merely accurate.
 - **UI**: course-page chips are rung-aware (`✓ Covered · L7`, `🏋 L5 — target is L7 Reflexive`, `target L8 — needs a deeper instrument`); dashboard coverage lines show `· target Ln` and the uncertifiable note.
 - Next steps (deferred): SRS retention evidence, execution/retrieval gym modes for rungs 2/8/9.
+
+## SRS retention evidence — DONE (2026-07-12)
+
+Step 5 of evidence-based module coverage, and the long-deferred SRS slice's seed: coverage answers "did they learn it", this layer answers "do they still know it". Verified by `SrsTest` (96 tests pass total) + a real backfill on the dev DB (60 historical attempts → 20 cards; per-module retention 50–100%, 2 due; review link resolves).
+
+- **Cards, not decks**: one `srs_cards` row per (learner, gym item) — the SRS reviews the *instrument*, so retention lands on the same module-tagged evidence stream as coverage, with zero new content to author. Scheduling is a plain **Leitner ladder** (`App\Support\Srs`, intervals 1/3/7/14/30/60 days — deliberately inspectable, no hidden ease factors): every exposure reschedules; correct climbs a box, a miss drops to box 1 and counts a lapse; first-exposure misses are not lapses.
+- **Review mode shares the gym engine**: `/gyms/{slug}?mode=review` (Livewire `#[Url]`) queues only due cards, oldest first. Review reps log normal gym telemetry *plus* a `retrieval/srs-review` event (`source_key srs_review:{attempt}`); the drill intro nudges toward due cards, and an empty review politely refuses to start.
+- **Retention is a signal, not a gate**: `Report` module evidence gains `retention {scheduled, due, rate}`, the Daily Glance gains "reviews due", and dashboard course rows get a `🔁 review N due` link. Deliberately does NOT reopen the coverage gate — completion stays sticky; decay surfaces as due reviews.
+- **`srs:backfill`** rebuilds all schedules by replaying attempt history chronologically (rebuild-from-scratch, converges on re-run).
+- ⚠ **Hazard surfaced en route**: `DsaCourseSeeder` deletes + recreates the course, which cascade-wipes learner `enrollments` (and lesson completions) — fine while the only learner is the admin, but it must become a true in-place upsert before real learners exist. Not fixed in this slice.
+- Next steps (deferred): execution/retrieval gym modes for rungs 2/8/9; make course seeders enrollment-safe.

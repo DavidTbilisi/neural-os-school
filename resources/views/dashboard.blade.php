@@ -26,11 +26,12 @@
                     <span class="text-xs text-gray-400">{{ now()->format('D, M j') }}</span>
                 </div>
                 @php $g = $report['glance']; @endphp
-                <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                <div class="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-4 text-center">
                     <div><div class="text-2xl font-bold text-gray-900">{{ $g['reps'] }}</div><div class="text-xs text-gray-500">gym reps</div></div>
                     <div><div class="text-2xl font-bold text-gray-900">{{ $g['accuracy'] !== null ? round($g['accuracy'] * 100).'%' : '—' }}</div><div class="text-xs text-gray-500">accuracy</div></div>
                     <div><div class="text-2xl font-bold text-gray-900">{{ $g['sessions'] }}</div><div class="text-xs text-gray-500">sessions</div></div>
                     <div><div class="text-2xl font-bold text-gray-900">{{ $g['lessons'] }}</div><div class="text-xs text-gray-500">lessons done</div></div>
+                    <div><div class="text-2xl font-bold {{ $g['reviewsDue'] > 0 ? 'text-amber-600' : 'text-gray-900' }}">{{ $g['reviewsDue'] }}</div><div class="text-xs text-gray-500">reviews due</div></div>
                 </div>
             </div>
 
@@ -172,11 +173,17 @@
                     <div class="space-y-5">
                         @foreach ($report['coverage'] as $cc)
                             <div>
+                                @php $courseDue = collect($cc['modules'])->sum(fn ($m) => $m['retention']['due']); @endphp
                                 <div class="flex items-center justify-between text-sm mb-2">
                                     <a href="{{ route('courses.show', $cc['slug']) }}" class="font-medium text-indigo-700 hover:underline">{{ $cc['title'] }}</a>
-                                    @if ($cc['uninstrumented'] > 0)
-                                        <span class="text-xs text-gray-400">{{ $cc['uninstrumented'] }} {{ Str::plural('module', $cc['uninstrumented']) }} without drill items yet</span>
-                                    @endif
+                                    <span class="flex items-center gap-3">
+                                        @if ($courseDue > 0 && $cc['reviewGym'])
+                                            <a href="{{ route('gyms.play', $cc['reviewGym']) }}?mode=review" class="text-xs text-amber-700 hover:underline">🔁 review {{ $courseDue }} due</a>
+                                        @endif
+                                        @if ($cc['uninstrumented'] > 0)
+                                            <span class="text-xs text-gray-400">{{ $cc['uninstrumented'] }} {{ Str::plural('module', $cc['uninstrumented']) }} without drill items yet</span>
+                                        @endif
+                                    </span>
                                 </div>
                                 <ul class="space-y-2">
                                     @foreach ($cc['modules'] as $m)
@@ -191,7 +198,7 @@
                                                     <span class="text-xs text-gray-400">{{ $m['n'] }}/{{ \App\Services\Meter\Report::MIN_SIGNAL }} reps · target L{{ $m['targetRung']['level'] }}</span>
                                                 @else
                                                     <span class="text-xs text-gray-500">
-                                                        {{ round($m['accuracy'] * 100) }}% · n={{ $m['n'] }} · {{ $m['sessions'] }} {{ Str::plural('session', $m['sessions']) }}@if ($m['rung']) · L{{ $m['rung']['level'] }} {{ $m['rung']['name'] }}@endif · target L{{ $m['targetRung']['level'] }}
+                                                        {{ round($m['accuracy'] * 100) }}% · n={{ $m['n'] }} · {{ $m['sessions'] }} {{ Str::plural('session', $m['sessions']) }}@if ($m['rung']) · L{{ $m['rung']['level'] }} {{ $m['rung']['name'] }}@endif · target L{{ $m['targetRung']['level'] }}@if ($m['retention']['scheduled'] > 0) · <span class="{{ $m['retention']['due'] > 0 ? 'text-amber-600' : '' }}">retention {{ round($m['retention']['rate'] * 100) }}%@if ($m['retention']['due'] > 0) ({{ $m['retention']['due'] }} due)@endif</span>@endif
                                                     </span>
                                                 @endif
                                                 <span class="text-xs rounded-full px-2 py-0.5 {{ $tone($m['verdict']['tone']) }}">{{ $m['verdict']['label'] }}</span>

@@ -6,6 +6,7 @@ use App\Models\Course;
 use App\Models\Gym;
 use App\Models\MeterEvent;
 use App\Models\Module;
+use App\Models\SrsCard;
 use App\Models\User;
 use App\Support\KnowledgeLadder;
 use Illuminate\Support\Collection;
@@ -63,6 +64,7 @@ class Report
             'accuracy' => $reps->isNotEmpty() ? $reps->avg(fn ($e) => $e->correct ? 1 : 0) : null,
             'sessions' => $today->where('operation', MeterEvent::OP_GYM_SESSION)->count(),
             'lessons' => $today->where('operation', MeterEvent::OP_LESSON_COMPLETE)->count(),
+            'reviewsDue' => SrsCard::where('user_id', $this->user->id)->due()->count(),
         ];
     }
 
@@ -198,6 +200,8 @@ class Report
             ->map(fn (Course $course) => [
                 'title' => $course->title,
                 'slug' => $course->slug,
+                // Where to send the learner for a retention pass.
+                'reviewGym' => $course->modules->flatMap->gymItems->first()?->gym?->slug,
                 'uninstrumented' => $course->modules->filter(fn (Module $m) => $m->gymItems->isEmpty())->count(),
                 'modules' => $course->modules
                     ->filter(fn (Module $m) => $m->gymItems->isNotEmpty())
@@ -262,6 +266,28 @@ class Report
             'targetRung' => KnowledgeLadder::rung($targetRung),
             'certifiable' => $targetRung <= KnowledgeLadder::GYM_CEILING,
             'covered' => $achieved !== null && $sustained && $achieved >= $targetRung,
+            'retention' => self::retention($module, $user),
+        ];
+    }
+
+    /**
+     * Retention state for a module: of the learner's scheduled SRS cards on
+     * its items, how many are current vs due? Deliberately separate from
+     * `covered` — retention decay surfaces as due reviews, never as a
+     * silently reopened completion gate.
+     */
+    private static function retention(Module $module, User $user): array
+    {
+        $cards = SrsCard::where('user_id', $user->id)
+            ->whereIn('gym_item_id', $module->gymItems->pluck('id'))
+            ->get();
+
+        $due = $cards->filter(fn (SrsCard $c) => $c->due_at->lessThanOrEqualTo(now()))->count();
+
+        return [
+            'scheduled' => $cards->count(),
+            'due' => $due,
+            'rate' => $cards->isNotEmpty() ? ($cards->count() - $due) / $cards->count() : null,
         ];
     }
 

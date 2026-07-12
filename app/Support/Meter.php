@@ -81,6 +81,30 @@ class Meter
         ]);
     }
 
+    /** One SRS review rep: a due card re-tested (Retrieval layer — memory, not first-pass performance). */
+    public static function srsReview(GymAttempt $attempt): MeterEvent
+    {
+        $attempt->loadMissing('session.gym', 'item');
+        $session = $attempt->session;
+
+        return self::emit([
+            'user_id' => $session->user_id,
+            'occurred_at' => $attempt->created_at ?? now(),
+            'layer' => MeterEvent::LAYER_RETRIEVAL,
+            'operation' => MeterEvent::OP_SRS_REVIEW,
+            'metric_type' => 'hit-miss',
+            'mode' => $session->gym?->slug,
+            'correct' => $attempt->is_correct,
+            'latency_ms' => $attempt->latency_ms,
+            'value' => $attempt->is_correct ? 1.0 : 0.0,
+            'context' => [
+                'gym_item_id' => $attempt->gym_item_id,
+                'module_id' => $attempt->item?->module_id,
+            ],
+            'source_key' => 'srs_review:'.$attempt->id,
+        ]);
+    }
+
     /** A lesson marked complete (Retrieval layer). Deduped per (user, lesson). */
     public static function lessonComplete(LessonCompletion $completion): MeterEvent
     {
