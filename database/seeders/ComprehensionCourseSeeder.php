@@ -16,7 +16,8 @@ use Illuminate\Support\Facades\DB;
  * validation protocols (5 Gates, self-explanation, the Burger habits), the
  * builders (chunking, elaboration, mental models, analogical reasoning,
  * BRIDGE LOAD), reading & listening for structure, and comprehension at scale
- * (compression, ORIENT) — plus optional L2, drill, and source-text strands.
+ * (compression, ORIENT) — plus optional L2, drill, remaining-Burger-habit,
+ * and source-text strands.
  * Publishes the two gate pages that were still private, since the course is
  * built on them. Idempotent.
  *
@@ -54,6 +55,9 @@ class ComprehensionCourseSeeder extends Seeder
             ], 'optional'],
             ['Drill Ladder', 'Optional reps: the BRIDGE LOAD template library, drills, and spaced-repetition deck.', [
                 'bridge-load-templates', 'bridge-load-drills', 'bridge-load-sr',
+            ], 'optional'],
+            ['Effective Thinking — the Rest of the Pentad', 'Optional: the three Burger habits that work outside the gate — failing on purpose, following the flow of ideas, and actually changing.', [
+                'fail-to-succeed-habit', 'flow-of-ideas-habit', 'transformative-change-habit',
             ], 'optional'],
             ['Source Texts', 'The references this cluster is drawn from.', [
                 'burger-5-elements-effective-thinking', 'willingham-cognitive-principles', 'brown-make-it-stick',
