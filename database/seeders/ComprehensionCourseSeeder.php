@@ -14,10 +14,11 @@ use Illuminate\Support\Facades\DB;
  * The comprehension layer of Neural OS as a guided path — why the gate exists
  * (fluency illusion, residue-of-thought, novice/expert), the human-owned
  * validation protocols (5 Gates, self-explanation, the Burger habits), the
- * builders (chunking, elaboration, mental models, BRIDGE LOAD), reading for
- * structure, and comprehension at scale (compression, ORIENT). Publishes the
- * two gate pages that were still private, since the course is built on them.
- * Idempotent.
+ * builders (chunking, elaboration, mental models, analogical reasoning,
+ * BRIDGE LOAD), reading & listening for structure, and comprehension at scale
+ * (compression, ORIENT) — plus optional L2, drill, and source-text strands.
+ * Publishes the two gate pages that were still private, since the course is
+ * built on them. Idempotent.
  *
  *   ./run php artisan db:seed --class=ComprehensionCourseSeeder
  */
@@ -38,17 +39,24 @@ class ComprehensionCourseSeeder extends Seeder
             ['The Gates', 'The human-owned validation protocols: 5 Gates, self-explanation, and the Earth/Air habits they grew from.', [
                 '5-gates-of-comprehension', 'self-explanation', 'understand-deeply-habit', 'socratic-question-generation',
             ]],
-            ['Builders', 'The moves that construct understanding rather than test it — chunking, elaboration, mental models, and load-tested analogies.', [
-                'chunking', 'elaboration', 'mental-models-for-learning', 'bridge-load',
+            ['Builders', 'The moves that construct understanding rather than test it — chunking, elaboration, mental models, and analogies with the logic beneath them.', [
+                'chunking', 'elaboration', 'mental-models-for-learning', 'analogical-reasoning', 'bridge-load',
             ]],
-            ['Reading for Structure', 'Turning reading from colored highlighting into structural extraction, then drilling it to reflex.', [
+            ['Reading & Listening for Structure', 'Turning both input channels from passive consumption into structural extraction, then drilling them to reflex.', [
                 'semantic-reading-system', 'semantic-reading-drill-ladder', 'semantic-reading-recognition-gym',
+                'semantic-listening-system', 'semantic-listening-drill-ladder',
             ]],
             ['Comprehension at Scale', 'Understanding a batch of materials as one generator plus deltas, and comprehending live environments you cannot re-read.', [
                 'compression-for-comprehension-framework', 'orient-method',
             ]],
+            ['Comprehension in a Second Language', 'Optional L2 strand: i+1 input, the L2 extension of semantic reading, and the tagging cheat sheet.', [
+                'comprehensible-input-protocol', 'semantic-reading-l2', 'semantic-input-cheat-sheet',
+            ], 'optional'],
             ['Drill Ladder', 'Optional reps: the BRIDGE LOAD template library, drills, and spaced-repetition deck.', [
                 'bridge-load-templates', 'bridge-load-drills', 'bridge-load-sr',
+            ], 'optional'],
+            ['Source Texts', 'The references this cluster is drawn from.', [
+                'burger-5-elements-effective-thinking', 'willingham-cognitive-principles', 'brown-make-it-stick',
             ], 'optional'],
         ];
     }
@@ -126,8 +134,10 @@ class ComprehensionCourseSeeder extends Seeder
                     .'gate exists at all — the fluency illusion, memory as residue of thought, and what separates expert '
                     .'from novice understanding — then the validation protocols themselves (5 Gates, self-explanation, '
                     .'the Burger habits), the moves that build understanding (chunking, elaboration, mental models, '
-                    .'BRIDGE LOAD), reading for structure, and finally comprehension at scale: compressing a batch of '
-                    .'materials into one generator, and ORIENTing in live environments you cannot re-read.',
+                    .'analogical reasoning, BRIDGE LOAD), reading and listening for structure, and finally '
+                    .'comprehension at scale: compressing a batch of materials into one generator, and ORIENTing in '
+                    .'live environments you cannot re-read. Optional strands cover second-language input, the BRIDGE '
+                    .'LOAD drill ladder, and the source texts.',
                 'source_page_id' => $roadmap?->id,
                 'domain_id' => $roadmap?->domain_id,
                 'status' => Course::STATUS_PUBLISHED,
