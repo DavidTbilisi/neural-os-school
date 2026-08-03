@@ -30,6 +30,7 @@ Thumbs.db
 /content
 /database/*.sqlite
 /database/*.sqlite-journal
+/public/audio
 
 # Playwright
 /test-results

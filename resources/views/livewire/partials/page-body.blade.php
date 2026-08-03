@@ -46,6 +46,8 @@
         </div>
     @endif
 
+    @include('livewire.partials.page-audio')
+
     {{--
         The reading column. `prose` handles element structure; the token-mapped
         --tw-prose-* variables retint it to warm ink / oxblood, and because each

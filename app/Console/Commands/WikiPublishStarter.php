@@ -29,6 +29,7 @@ class WikiPublishStarter extends Command
         'graph-theory',
         'networking',
         'math',
+        'french-song', // staged from tools/french-music-drill by sync-content.sh (own lyrics, no scraped content)
     ];
 
     public function handle(): int
