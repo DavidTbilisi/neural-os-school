@@ -24,20 +24,42 @@ class WikiRenderer
     public function render(Page $page): string
     {
         $md = $this->stripPreamble($page->body_md);
+        $md = $this->stripLeadingTitle($md, $page->title);
         $md = $this->stripMarks($md);
         $md = $this->linkify($md);
 
         return $this->toHtml($md);
     }
 
-    /** Drop the leading `# Title / **Summary** / **Sources** / **Last updated**` block up to the first `---`. */
+    /**
+     * Drop the leading `# Title / **Summary** / **Sources** / **Last updated**`
+     * block up to the first `---` — but only when that block really is the
+     * standard preamble (it carries the `**Summary**` marker). Pages outside
+     * the page format (e.g. the french-song units) open with real content, and
+     * an early thematic break must not swallow it.
+     */
     private function stripPreamble(string $body): string
     {
-        if (preg_match('/\R---\R/', $body, $m, PREG_OFFSET_CAPTURE)) {
+        if (preg_match('/\R---\R/', $body, $m, PREG_OFFSET_CAPTURE)
+            && str_contains(substr($body, 0, $m[0][1]), '**Summary**')) {
             return substr($body, $m[0][1] + strlen($m[0][0]));
         }
 
         return $body;
+    }
+
+    /**
+     * Drop a leading H1 that repeats the page title — the reader's header
+     * already shows it. This is how non-preamble pages avoid a double title
+     * (their H1 is where the title was parsed from in the first place).
+     */
+    private function stripLeadingTitle(string $md, string $title): string
+    {
+        if (preg_match('/^\s*#\s+(.+?)\s*(\R|$)/', $md, $m) && trim($m[1]) === trim($title)) {
+            return substr($md, strlen($m[0]));
+        }
+
+        return $md;
     }
 
     /** `{{Sigil|content}}` → `content` (the reader doesn't surface sigils yet). */

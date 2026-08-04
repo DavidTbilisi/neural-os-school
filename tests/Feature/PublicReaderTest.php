@@ -57,6 +57,39 @@ class PublicReaderTest extends TestCase
         $this->actingAs($staff)->get('/wiki/draft-page')->assertOk()->assertSee('staff preview');
     }
 
+    public function test_leading_h1_matching_the_title_is_not_rendered_twice(): void
+    {
+        $page = $this->page('song-unit', Page::VISIBILITY_PUBLIC,
+            "# Song Unit\n\n**Curriculum:** A1.\n\nLyrics here.");
+
+        $html = app(WikiRenderer::class)->render($page);
+
+        $this->assertStringNotContainsString('<h1', $html);
+        $this->assertStringContainsString('Lyrics here.', $html);
+    }
+
+    public function test_early_thematic_break_does_not_swallow_content_without_a_summary_preamble(): void
+    {
+        $page = $this->page('rules-page', Page::VISIBILITY_PUBLIC,
+            "# Rules Page\n\nThe intro paragraph.\n\n---\n\n## First section");
+
+        $html = app(WikiRenderer::class)->render($page);
+
+        $this->assertStringContainsString('The intro paragraph.', $html);
+        $this->assertStringContainsString('First section', $html);
+    }
+
+    public function test_standard_summary_preamble_is_still_stripped(): void
+    {
+        $page = $this->page('formatted-page', Page::VISIBILITY_PUBLIC,
+            "# Formatted Page\n\n**Summary**: One line.\n\n**Sources**: none.\n\n---\n\nReal body.");
+
+        $html = app(WikiRenderer::class)->render($page);
+
+        $this->assertStringNotContainsString('One line.', $html);
+        $this->assertStringContainsString('Real body.', $html);
+    }
+
     public function test_wiki_links_resolve_only_to_viewable_targets(): void
     {
         $this->page('target-b', Page::VISIBILITY_PUBLIC);
