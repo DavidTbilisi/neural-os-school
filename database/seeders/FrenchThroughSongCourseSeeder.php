@@ -15,8 +15,9 @@ use Illuminate\Support\Facades\DB;
  * Transcribed from tools/french-music-drill/COURSE-MANIFEST.md in the wiki repo
  * (the canonical curriculum map — when the two drift, the manifest wins). Lesson
  * pages are the song units, staged into content/wiki/french-song/ with a `fr-`
- * slug prefix by ./sync-content.sh. Seeds as DRAFT — review in Filament, publish
- * deliberately. Idempotent (UpsertsCourseCurriculum).
+ * slug prefix by ./sync-content.sh. Seeds as PUBLISHED (David's call,
+ * 2026-08-04, after staff-previewing the draft). Idempotent
+ * (UpsertsCourseCurriculum).
  *
  * Run order (the fr- pages must exist and be public before lessons can link):
  *   ./sync-content.sh
@@ -103,14 +104,14 @@ class FrenchThroughSongCourseSeeder extends Seeder
                     .'intonation gyms.',
                 'source_page_id' => $roadmap?->id,
                 'domain_id' => $roadmap?->domain_id,
-                'status' => Course::STATUS_DRAFT,
+                'status' => Course::STATUS_PUBLISHED,
                 'sort' => 3,
             ], $this->curriculum());
 
             $mounted = Gym::whereIn('slug', self::PRACTICE_GYMS)
                 ->update(['course_id' => $result['course']->id]);
 
-            $this->command?->info("Seeded draft course '".self::SLUG."': "
+            $this->command?->info("Seeded published course '".self::SLUG."': "
                 .$result['course']->modules()->count()." modules, {$result['lessons']} lessons, {$mounted} gyms mounted.");
             if ($result['missing'] !== []) {
                 $this->command?->warn('  Skipped '.count($result['missing']).' unpublished/missing pages: '.implode(', ', $result['missing']));
