@@ -16,6 +16,9 @@ export default {
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
         './app/Filament/**/*.php',
+        // Palette holds the literal bg-domain-N / text-domain-N-fg strings the
+        // views ask for by data — without this they'd never be generated.
+        './app/Support/Palette.php',
     ],
 
     theme: {

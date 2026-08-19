@@ -75,6 +75,35 @@
   --color-info-subtle: 217 240 251; /* #D9F0FB */
   --color-info-fg:     20 99 143;   /* #14638F — text (~6:1) */
 
+
+  /* --- Domain palette --------------------------------------------------
+     Ten pastel fill/text pairs, one per wheel-of-life domain (domains.id
+     1–10, stable since the reference seeder). Color here is DATA: a domain
+     keeps its hue across the app, so the library, a course card and a page
+     header all agree at a glance. Fills are pastel; the paired -fg is deep
+     enough to read on its own fill (≥6:1). Applied via App\Support\Palette.
+     -------------------------------------------------------------------- */
+  --color-domain-1:     216 237 251; /* #D8EDFB sky      — Career / Mission */
+  --color-domain-1-fg:  18 96 142;   /* #12608E */
+  --color-domain-2:     215 244 228; /* #D7F4E4 mint     — Wealth / Money */
+  --color-domain-2-fg:  15 107 71;   /* #0F6B47 */
+  --color-domain-3:     253 225 217; /* #FDE1D9 coral    — Physical Health */
+  --color-domain-3-fg:  162 64 30;   /* #A2401E */
+  --color-domain-4:     223 226 252; /* #DFE2FC periwinkle — Mental Well-being */
+  --color-domain-4-fg:  51 63 158;   /* #333F9E */
+  --color-domain-5:     251 220 234; /* #FBDCEA pink     — Romance / Partner */
+  --color-domain-5-fg:  158 30 91;   /* #9E1E5B */
+  --color-domain-6:     252 238 202; /* #FCEECA butter   — Family & Friends */
+  --color-domain-6-fg:  134 96 11;   /* #86600B */
+  --color-domain-7:     253 231 204; /* #FDE7CC tangerine — Fun & Leisure */
+  --color-domain-7-fg:  150 80 11;   /* #96500B */
+  --color-domain-8:     211 240 236; /* #D3F0EC teal     — Spirituality */
+  --color-domain-8-fg:  14 100 90;   /* #0E645A */
+  --color-domain-9:     226 240 206; /* #E2F0CE sage     — Environment */
+  --color-domain-9-fg:  79 106 21;   /* #4F6A15 */
+  --color-domain-10:    234 221 251; /* #EADDFB lilac    — Personal Growth / Learning */
+  --color-domain-10-fg: 67 40 158;   /* #43289E */
+
   /* --- Full-value tokens (soft, neutral, barely-there) ------------------ */
   --color-overlay: rgba(17, 18, 24, 0.40);
 
@@ -224,6 +253,19 @@
   --color-info-subtle: 18 43 57;    /* #122B39 */
   --color-info-fg:     169 218 245; /* #A9DAF5 */
 
+
+  /* Domain palette — deep tints, light text (same hue order as light). */
+  --color-domain-1:     18 40 58;    --color-domain-1-fg:  166 212 242;
+  --color-domain-2:     18 48 31;    --color-domain-2-fg:  143 224 180;
+  --color-domain-3:     58 28 20;    --color-domain-3-fg:  245 182 162;
+  --color-domain-4:     28 31 62;    --color-domain-4-fg:  179 188 245;
+  --color-domain-5:     55 22 42;    --color-domain-5-fg:  244 169 203;
+  --color-domain-6:     51 40 15;    --color-domain-6-fg:  243 211 138;
+  --color-domain-7:     53 31 12;    --color-domain-7-fg:  245 196 142;
+  --color-domain-8:     15 46 42;    --color-domain-8-fg:  146 222 211;
+  --color-domain-9:     35 46 18;    --color-domain-9-fg:  198 222 148;
+  --color-domain-10:    47 40 78;    --color-domain-10-fg: 205 194 255;
+
   /* Full-value tokens — deep, neutral; elevation reads via surface color */
   --color-overlay: rgba(6, 7, 10, 0.70);
 
@@ -274,6 +316,17 @@
     --color-info: 99 184 232;
     --color-info-subtle: 18 43 57;
     --color-info-fg: 169 218 245;
+
+    --color-domain-1:     18 40 58;    --color-domain-1-fg:  166 212 242;
+    --color-domain-2:     18 48 31;    --color-domain-2-fg:  143 224 180;
+    --color-domain-3:     58 28 20;    --color-domain-3-fg:  245 182 162;
+    --color-domain-4:     28 31 62;    --color-domain-4-fg:  179 188 245;
+    --color-domain-5:     55 22 42;    --color-domain-5-fg:  244 169 203;
+    --color-domain-6:     51 40 15;    --color-domain-6-fg:  243 211 138;
+    --color-domain-7:     53 31 12;    --color-domain-7-fg:  245 196 142;
+    --color-domain-8:     15 46 42;    --color-domain-8-fg:  146 222 211;
+    --color-domain-9:     35 46 18;    --color-domain-9-fg:  198 222 148;
+    --color-domain-10:    47 40 78;    --color-domain-10-fg: 205 194 255;
 
     --color-overlay: rgba(6, 7, 10, 0.70);
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.45);

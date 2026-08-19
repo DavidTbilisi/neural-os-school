@@ -26,7 +26,7 @@
                     {{ $page->title }}
                 </a>
                 @if ($page->domain)
-                    <span class="ml-2 whitespace-nowrap rounded-full bg-primary-subtle px-2.5 py-1 align-middle text-xs text-primary-subtle-fg">{{ $page->domain->name }}</span>
+                    <span class="ml-2 whitespace-nowrap rounded-full px-2.5 py-1 align-middle text-xs {{ \App\Support\Palette::chip($page->domain) }}">{{ $page->domain->name }}</span>
                 @endif
                 @if ($page->summary)
                     <p class="text-sm text-muted mt-1">{{ Str::limit($page->summary, 200) }}</p>

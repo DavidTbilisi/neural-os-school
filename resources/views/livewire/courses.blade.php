@@ -12,24 +12,30 @@
         <div class="grid gap-4 sm:grid-cols-2">
             @foreach ($cards as $card)
                 @php($course = $card['course'])
+                {{-- The tinted head is keyed to the course ID, so a course keeps
+                     its color no matter how the grid is sorted. --}}
+                @php($hue = \App\Support\Palette::nth($course->id))
                 <a href="{{ route('courses.show', $course->slug) }}"
-                   class="block rounded-lg border border-border bg-surface p-4 hover:border-primary hover:shadow-sm transition">
-                    <div class="flex items-start justify-between gap-2">
-                        <h2 class="font-display text-lg font-bold text-fg">{{ $course->title }}</h2>
-                        @if ($card['enrolled'])
-                            <span class="shrink-0 text-xs rounded-full bg-success-subtle text-success-fg px-2 py-0.5">Enrolled</span>
-                        @elseif (! $card['prereqsMet'])
-                            <span class="shrink-0 text-xs rounded-full bg-warning-subtle text-warning-fg px-2 py-0.5" title="Recommended prerequisites not finished">Prereqs</span>
+                   class="block overflow-hidden rounded-lg border border-border bg-surface transition hover:shadow-md">
+                    <div class="{{ $hue['fill'] }} px-4 pb-4 pt-4">
+                        <div class="flex items-start justify-between gap-2">
+                            <h2 class="font-display text-lg font-bold {{ $hue['text'] }}">{{ $course->title }}</h2>
+                            @if ($card['enrolled'])
+                                <span class="shrink-0 rounded-full bg-surface/70 px-2.5 py-1 text-xs font-semibold {{ $hue['text'] }}">Enrolled</span>
+                            @elseif (! $card['prereqsMet'])
+                                <span class="shrink-0 rounded-full bg-warning-subtle px-2.5 py-1 text-xs text-warning-fg" title="Recommended prerequisites not finished">Prereqs</span>
+                            @endif
+                        </div>
+
+                        @if ($course->subtitle)
+                            <p class="mt-1 text-sm opacity-80 {{ $hue['text'] }}">{{ Str::limit($course->subtitle, 140) }}</p>
                         @endif
                     </div>
 
-                    @if ($course->subtitle)
-                        <p class="mt-1 text-sm text-muted">{{ Str::limit($course->subtitle, 140) }}</p>
-                    @endif
-
-                    <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted">
+                    <div class="px-4 pb-4 pt-3">
+                    <div class="flex flex-wrap items-center gap-2 text-xs text-muted">
                         @if ($course->domain)
-                            <span class="whitespace-nowrap rounded-full bg-primary-subtle px-2.5 py-1 text-primary-subtle-fg">{{ $course->domain->name }}</span>
+                            <span class="whitespace-nowrap rounded-full px-2.5 py-1 {{ \App\Support\Palette::chip($course->domain) }}">{{ $course->domain->name }}</span>
                         @endif
                         <span>{{ $card['moduleCount'] }} modules</span>
                         <span aria-hidden="true">·</span>
@@ -44,6 +50,7 @@
                             <p class="mt-1 text-xs text-muted">{{ round($card['progress'] * 100) }}% complete</p>
                         </div>
                     @endif
+                    </div>
                 </a>
             @endforeach
         </div>

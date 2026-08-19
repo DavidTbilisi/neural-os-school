@@ -12,11 +12,14 @@
 
 <div class="mt-6 space-y-5">
     @foreach ($course->modules as $mi => $module)
-        <section class="rounded-lg border border-border bg-surface">
-            <header class="border-b border-border px-4 py-3">
+        {{-- Hue by module ID, so a module keeps its color even if the
+             curriculum is reordered around it. --}}
+        @php($hue = \App\Support\Palette::nth($module->id))
+        <section class="overflow-hidden rounded-lg border border-border bg-surface">
+            <header class="{{ $hue['fill'] }} px-4 py-3">
                 <div class="flex items-center justify-between gap-3">
-                    <h3 class="font-display font-bold text-fg">
-                        <span class="text-subtle">{{ $mi + 1 }}.</span> {{ $module->title }}
+                    <h3 class="font-display font-bold {{ $hue['text'] }}">
+                        <span class="opacity-60">{{ $mi + 1 }}.</span> {{ $module->title }}
                     </h3>
                     @php($ev = $moduleEvidence[$module->id] ?? null)
                     @if ($ev)
@@ -34,7 +37,7 @@
                     @endif
                 </div>
                 @if ($module->summary)
-                    <p class="text-sm text-muted mt-0.5">{{ $module->summary }}</p>
+                    <p class="mt-0.5 text-sm opacity-80 {{ $hue['text'] }}">{{ $module->summary }}</p>
                 @endif
             </header>
             <ul class="divide-y divide-border-subtle">

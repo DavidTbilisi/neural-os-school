@@ -26,12 +26,25 @@
                     <span class="text-xs text-subtle">{{ now()->format('D, M j') }}</span>
                 </div>
                 @php $g = $report['glance']; @endphp
-                <div class="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-4 text-center">
-                    <div><div class="text-2xl font-bold text-fg">{{ $g['reps'] }}</div><div class="text-xs text-muted">gym reps</div></div>
-                    <div><div class="text-2xl font-bold text-fg">{{ $g['accuracy'] !== null ? round($g['accuracy'] * 100).'%' : '—' }}</div><div class="text-xs text-muted">accuracy</div></div>
-                    <div><div class="text-2xl font-bold text-fg">{{ $g['sessions'] }}</div><div class="text-xs text-muted">sessions</div></div>
-                    <div><div class="text-2xl font-bold text-fg">{{ $g['lessons'] }}</div><div class="text-xs text-muted">lessons done</div></div>
-                    <div><div class="text-2xl font-bold {{ $g['reviewsDue'] > 0 ? 'text-warning' : 'text-fg' }}">{{ $g['reviewsDue'] }}</div><div class="text-xs text-muted">reviews due</div></div>
+                {{-- One hue per metric, fixed — the tile's color is part of how
+                     you find it, so it must not shuffle between visits. --}}
+                @php
+                    $tiles = [
+                        [0, $g['reps'], 'gym reps'],
+                        [1, $g['accuracy'] !== null ? round($g['accuracy'] * 100).'%' : '—', 'accuracy'],
+                        [3, $g['sessions'], 'sessions'],
+                        [5, $g['lessons'], 'lessons done'],
+                        [4, $g['reviewsDue'], 'reviews due'],
+                    ];
+                @endphp
+                <div class="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
+                    @foreach ($tiles as [$hueIndex, $value, $label])
+                        @php $hue = \App\Support\Palette::nth($hueIndex); @endphp
+                        <div class="rounded-lg {{ $hue['fill'] }} p-4">
+                            <div class="text-2xl font-bold {{ $hue['text'] }}">{{ $value }}</div>
+                            <div class="text-xs opacity-80 {{ $hue['text'] }}">{{ $label }}</div>
+                        </div>
+                    @endforeach
                 </div>
             </div>
 

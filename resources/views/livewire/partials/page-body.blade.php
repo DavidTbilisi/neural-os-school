@@ -20,7 +20,7 @@
 
         <div class="mt-4 flex flex-wrap items-center gap-2 text-xs">
             @if ($page->domain)
-                <span class="whitespace-nowrap rounded-full bg-primary-subtle px-2.5 py-1 text-primary-subtle-fg">{{ $page->domain->name }}</span>
+                <span class="whitespace-nowrap rounded-full px-2.5 py-1 {{ \App\Support\Palette::chip($page->domain) }}">{{ $page->domain->name }}</span>
             @endif
             @if ($page->palace)
                 <span class="rounded bg-surface-sunken text-muted px-2 py-0.5">{{ $page->palace }}</span>

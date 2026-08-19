@@ -9,18 +9,21 @@
     @else
         <div class="grid gap-4 sm:grid-cols-2">
             @foreach ($gyms as $gym)
+                @php($hue = \App\Support\Palette::nth($gym->id))
                 <a href="{{ route('gyms.play', $gym->slug) }}"
-                   class="block rounded-lg border border-border bg-surface p-4 hover:border-primary hover:shadow-sm transition">
-                    <div class="flex items-start justify-between gap-2">
-                        <h2 class="font-display text-lg font-bold text-fg">{{ $gym->title }}</h2>
-                        <span class="shrink-0 text-xs rounded-full bg-surface-sunken text-muted px-2 py-0.5">{{ ucfirst($gym->mode) }}</span>
+                   class="block overflow-hidden rounded-lg border border-border bg-surface transition hover:shadow-md">
+                    <div class="{{ $hue['fill'] }} px-4 pb-4 pt-4">
+                        <div class="flex items-start justify-between gap-2">
+                            <h2 class="font-display text-lg font-bold {{ $hue['text'] }}">{{ $gym->title }}</h2>
+                            <span class="shrink-0 rounded-full bg-surface/70 px-2.5 py-1 text-xs font-semibold {{ $hue['text'] }}">{{ ucfirst($gym->mode) }}</span>
+                        </div>
+                        @if ($gym->subtitle)
+                            <p class="mt-1 text-sm opacity-80 {{ $hue['text'] }}">{{ $gym->subtitle }}</p>
+                        @endif
                     </div>
-                    @if ($gym->subtitle)
-                        <p class="mt-1 text-sm text-muted">{{ $gym->subtitle }}</p>
-                    @endif
-                    <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted">
+                    <div class="flex flex-wrap items-center gap-2 px-4 pb-4 pt-3 text-xs text-muted">
                         @if ($gym->domain)
-                            <span class="whitespace-nowrap rounded-full bg-primary-subtle px-2.5 py-1 text-primary-subtle-fg">{{ $gym->domain->name }}</span>
+                            <span class="whitespace-nowrap rounded-full px-2.5 py-1 {{ \App\Support\Palette::chip($gym->domain) }}">{{ $gym->domain->name }}</span>
                         @endif
                         <span>{{ $gym->items_count }} items</span>
                         <span aria-hidden="true">·</span>

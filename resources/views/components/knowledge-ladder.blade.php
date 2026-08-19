@@ -15,18 +15,24 @@
         @php($reached = $current !== null && $lvl <= $current)
         @php($isCurrent = $lvl === $current)
         @php($beyond = $lvl > $ceiling)
+        @php($hue = \App\Support\Palette::rung($lvl))
         <div class="flex-1 min-w-0 text-center" title="{{ $lvl }} · {{ $rung['name'] }} — {{ $rung['standard'] }}">
             <div @class([
                 'rounded-sm transition-colors',
                 'h-2.5' => $isCurrent,
                 'h-1.5' => ! $isCurrent && ! $beyond,
                 'h-1.5 border border-dashed border-border bg-transparent' => $beyond,
-                'bg-primary' => $reached && ! $beyond,
-                'bg-surface-sunken' => ! $reached && ! $beyond,
+                // Climbed rungs carry their own hue — the strip reads as a ramp.
+                // With no session to report (overview), every rung shows its
+                // pastel so the ramp is legible before anyone has climbed it;
+                // once there IS a level, unreached rungs go grey to say "not yet".
+                $hue['dot'] => $reached && ! $beyond,
+                $hue['fill'] => $current === null && ! $beyond,
+                'bg-surface-sunken' => $current !== null && ! $reached && ! $beyond,
             ])></div>
             <div @class([
                 'mt-1 font-mono text-[10px] leading-none',
-                'text-primary font-bold' => $isCurrent,
+                $hue['text'].' font-bold' => $isCurrent,
                 'text-muted' => ! $isCurrent && $reached && ! $beyond,
                 'text-subtle' => $beyond || (! $reached && ! $isCurrent),
             ])>{{ $lvl }}</div>

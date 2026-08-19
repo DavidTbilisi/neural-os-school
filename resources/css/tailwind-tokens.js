@@ -93,6 +93,21 @@ export default {
         fg: c('info-fg'),
       },
 
+      // Domain palette — bg-domain-1 … bg-domain-10 + text-domain-N-fg.
+      // Assigned from data by App\Support\Palette, never hand-picked per view.
+      domain: {
+        1: { DEFAULT: c('domain-1'), fg: c('domain-1-fg') },
+        2: { DEFAULT: c('domain-2'), fg: c('domain-2-fg') },
+        3: { DEFAULT: c('domain-3'), fg: c('domain-3-fg') },
+        4: { DEFAULT: c('domain-4'), fg: c('domain-4-fg') },
+        5: { DEFAULT: c('domain-5'), fg: c('domain-5-fg') },
+        6: { DEFAULT: c('domain-6'), fg: c('domain-6-fg') },
+        7: { DEFAULT: c('domain-7'), fg: c('domain-7-fg') },
+        8: { DEFAULT: c('domain-8'), fg: c('domain-8-fg') },
+        9: { DEFAULT: c('domain-9'), fg: c('domain-9-fg') },
+        10: { DEFAULT: c('domain-10'), fg: c('domain-10-fg') },
+      },
+
       // The top bar — dark in BOTH themes (see tokens.css); bg-bar / text-bar-fg
       bar: {
         DEFAULT: c('bar'),

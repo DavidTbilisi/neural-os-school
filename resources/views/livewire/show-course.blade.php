@@ -31,7 +31,7 @@
             @endif
             <div class="mt-2 flex items-center gap-2 text-xs text-muted">
                 @if ($course->domain)
-                    <span class="whitespace-nowrap rounded-full bg-primary-subtle px-2.5 py-1 text-primary-subtle-fg">{{ $course->domain->name }}</span>
+                    <span class="whitespace-nowrap rounded-full px-2.5 py-1 {{ \App\Support\Palette::chip($course->domain) }}">{{ $course->domain->name }}</span>
                 @endif
                 <span>{{ $course->modules->count() }} modules · {{ $requiredTotal }} required lessons</span>
             </div>
