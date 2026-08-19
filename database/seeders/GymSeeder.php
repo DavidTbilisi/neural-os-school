@@ -51,6 +51,10 @@ class GymSeeder extends Seeder
                 'latency_target_ms' => 6000,
                 'pass_accuracy' => 0.80,
                 'promote_accuracy' => 0.85,
+                // The blind-spot floor: 12 pattern families averaged into one
+                // accuracy will read "reflexive" while a family sits at 0/2.
+                // Zero any family and the rung is capped, however high the mean.
+                'blind_spot_floor' => true,
                 // Levels come from the Red Queen Knowledge Ladder (0–9), computed
                 // by App\Support\KnowledgeLadder from pass/promote/latency above —
                 // no per-gym stage ladder to maintain. The old ad-hoc `stages`

@@ -14,9 +14,17 @@ tty_flag=()
 
 # Only publish the web port when actually serving, so other commands can run
 # concurrently with a running dev server (podman can't double-bind the port).
+# The published port follows --port= so a busy 8000 can be stepped around:
+#   ./run php artisan serve --host=0.0.0.0 --port=8010
 publish=()
 case " $* " in
-  *" serve "*) publish=(-p 8000:8000) ;;
+  *" serve "*)
+    port=8000
+    for arg in "$@"; do
+      case "$arg" in --port=*) port="${arg#--port=}" ;; esac
+    done
+    publish=(-p "$port:$port")
+    ;;
 esac
 
 exec podman run --rm "${tty_flag[@]}" \

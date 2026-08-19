@@ -12,6 +12,7 @@ use App\Models\GymSession;
 use App\Models\Lesson;
 use App\Models\Page;
 use App\Models\User;
+use App\Support\KnowledgeLadder;
 use Database\Seeders\DsaCourseSeeder;
 use Database\Seeders\GymSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -157,6 +158,172 @@ class GymTest extends TestCase
         $session = GymSession::where('user_id', $learner->id)->firstOrFail();
         $this->assertEqualsWithDelta(1.0, $session->accuracy, 0.001);
         $this->assertSame('L7', $session->stage_code); // 100% + fast → Reflexive (the gym ceiling)
+    }
+
+    // ---- blind-spot floor -------------------------------------------------
+
+    /**
+     * A gym whose items span several categories: $spec maps category => item
+     * count. Every item offers [own category, 'WRONG'], so a run can be driven
+     * by intent regardless of the shuffled order.
+     *
+     * @param  array<string, int>  $spec
+     */
+    private function categoryGym(string $slug, array $spec, bool $floor = true): Gym
+    {
+        $gym = Gym::create([
+            'slug' => $slug,
+            'title' => ucwords(str_replace('-', ' ', $slug)),
+            'mode' => 'recognition',
+            'round_count' => array_sum($spec),
+            'timer_seconds' => 8,
+            'latency_target_ms' => 6000,
+            'pass_accuracy' => 0.80,
+            'promote_accuracy' => 0.85,
+            'blind_spot_floor' => $floor,
+            'status' => Gym::STATUS_PUBLISHED,
+        ]);
+
+        $sort = 0;
+        foreach ($spec as $category => $count) {
+            for ($i = 0; $i < $count; $i++) {
+                $gym->items()->create([
+                    'prompt' => "{$category} #{$i}",
+                    'choices' => [$category, 'WRONG'],
+                    'correct' => $category,
+                    'sort' => $sort++,
+                ]);
+            }
+        }
+
+        return $gym;
+    }
+
+    /** Ten 2-item categories — 20 rounds, so missing one whole category is still 90%. */
+    private function twelvePatternSpec(): array
+    {
+        return array_fill_keys([
+            'Hashmap', 'Two Pointers', 'Sliding Window', 'Binary Search', 'BFS',
+            'DFS', 'Heap', 'Monotonic Stack', 'DP 1D', 'Backtracking',
+        ], 2);
+    }
+
+    /**
+     * Play a whole session, missing exactly the items $miss selects.
+     * Returns the finalized session.
+     */
+    private function play(User $learner, Gym $gym, callable $miss, int $latencyMs = 1000): GymSession
+    {
+        $test = Livewire::actingAs($learner)->test(PlayGym::class, ['slug' => $gym->slug])->call('start');
+
+        foreach ($gym->items as $ignored) {
+            $item = $test->instance()->currentItem();
+            $this->assertNotNull($item, 'ran out of items before the summary');
+            $test->call('answer', $miss($item) ? 'WRONG' : $item->correct, $latencyMs)->call('next');
+        }
+
+        $test->assertSet('phase', 'summary');
+
+        return GymSession::where('user_id', $learner->id)->latest('id')->firstOrFail();
+    }
+
+    public function test_a_zeroed_category_caps_the_rung_and_names_the_blind_spot(): void
+    {
+        $gym = $this->categoryGym('floor-gym', $this->twelvePatternSpec());
+        $learner = User::factory()->create(['role' => UserRole::Learner]);
+
+        // 18/20 = 90%, fast — but both Monotonic Stack items missed.
+        $session = $this->play($learner, $gym, fn (GymItem $i) => $i->correct === 'Monotonic Stack');
+
+        $this->assertEqualsWithDelta(0.90, $session->accuracy, 0.001);
+        $this->assertSame([['category' => 'Monotonic Stack', 'items' => 2]], $session->blind_spots);
+
+        // Accuracy + speed alone read Reflexive; the floor withholds it.
+        $this->assertSame(7, KnowledgeLadder::levelForGym($gym, 0.90, 1000));
+        $this->assertSame('L'.KnowledgeLadder::BLIND_SPOT_CEILING, $session->stage_code);
+        $this->assertSame('L4', $session->stage_code);
+    }
+
+    public function test_the_same_accuracy_spread_across_categories_still_reaches_the_top_rung(): void
+    {
+        $gym = $this->categoryGym('spread-gym', $this->twelvePatternSpec());
+        $learner = User::factory()->create(['role' => UserRole::Learner]);
+
+        // Same 18/20 at the same speed — but the two misses land in different
+        // categories, so neither is zeroed. Distribution, not the mean, decides.
+        $session = $this->play(
+            $learner,
+            $gym,
+            fn (GymItem $i) => in_array($i->prompt, ['Monotonic Stack #0', 'Heap #0'], true),
+        );
+
+        $this->assertEqualsWithDelta(0.90, $session->accuracy, 0.001);
+        $this->assertSame([], $session->blind_spots);
+        $this->assertSame('L7', $session->stage_code);
+    }
+
+    public function test_the_summary_names_the_blind_spot_and_the_rung_it_cost(): void
+    {
+        $gym = $this->categoryGym('report-gym', $this->twelvePatternSpec());
+        $learner = User::factory()->create(['role' => UserRole::Learner]);
+
+        $test = Livewire::actingAs($learner)->test(PlayGym::class, ['slug' => 'report-gym'])->call('start');
+        foreach ($gym->items as $ignored) {
+            $item = $test->instance()->currentItem();
+            $test->call('answer', $item->correct === 'Monotonic Stack' ? 'WRONG' : $item->correct, 1000)->call('next');
+        }
+
+        $test->assertSee('Blind spot')
+            ->assertSee('Monotonic Stack')
+            ->assertSee('0 of 2 items in this run')
+            ->assertSee('Reflexive')          // what accuracy + speed alone read
+            ->assertDontSee('reflex is stabilizing');
+    }
+
+    public function test_the_floor_is_per_gym_and_can_be_switched_off(): void
+    {
+        $gym = $this->categoryGym('nofloor-gym', $this->twelvePatternSpec(), floor: false);
+        $learner = User::factory()->create(['role' => UserRole::Learner]);
+
+        $session = $this->play($learner, $gym, fn (GymItem $i) => $i->correct === 'Monotonic Stack');
+
+        // Identical run to the floored gym — this one still promotes.
+        $this->assertEqualsWithDelta(0.90, $session->accuracy, 0.001);
+        $this->assertSame([], $session->blind_spots);
+        $this->assertSame('L7', $session->stage_code);
+    }
+
+    public function test_the_floor_only_lowers_a_rung_never_raises_one(): void
+    {
+        $gym = $this->categoryGym('cap-gym', ['A' => 1]);
+
+        // Bands at or below the ceiling are untouched by a blind spot.
+        // (Pairs, not float keys — PHP truncates those to int and collides them.)
+        foreach ([[0.40, 0], [0.55, 1], [0.75, 3], [0.82, 4]] as [$accuracy, $expected]) {
+            $this->assertSame($expected, KnowledgeLadder::levelForGym($gym, $accuracy, 1000, true));
+            $this->assertSame($expected, KnowledgeLadder::levelForGym($gym, $accuracy, 1000));
+        }
+
+        // Only the promote band (5 Operational, 7 Reflexive) is withheld.
+        $this->assertSame(5, KnowledgeLadder::levelForGym($gym, 0.95, 9000));
+        $this->assertSame(4, KnowledgeLadder::levelForGym($gym, 0.95, 9000, true));
+        $this->assertSame(7, KnowledgeLadder::levelForGym($gym, 0.95, 1000));
+        $this->assertSame(4, KnowledgeLadder::levelForGym($gym, 0.95, 1000, true));
+    }
+
+    public function test_seeded_algorithm_pattern_gym_declares_the_floor(): void
+    {
+        $this->seed(DsaCourseSeeder::class);
+        $this->seed(GymSeeder::class);
+
+        $gym = Gym::where('slug', 'algorithm-pattern-gym')->firstOrFail();
+        $this->assertTrue($gym->blind_spot_floor);
+
+        // Every deck item's `correct` is a pattern family — the categories the
+        // floor groups by. Monotonic Stack is the family the wiki run zeroed.
+        $families = $gym->items()->pluck('correct')->unique();
+        $this->assertTrue($families->contains('Monotonic Stack'));
+        $this->assertSame(2, $gym->items()->where('correct', 'Monotonic Stack')->count());
     }
 
     // ---- course link ------------------------------------------------------

@@ -27,6 +27,10 @@
                 <span>{{ $gym->timer_seconds }}s each</span>
                 <span aria-hidden="true">·</span>
                 <span>promote at {{ round($gym->promote_accuracy * 100) }}%</span>
+                @if ($gym->blind_spot_floor)
+                    <span aria-hidden="true">·</span>
+                    <span title="Miss every item of one category and the top rung is withheld, however high the average.">no zeroed category</span>
+                @endif
             </div>
             @if ($this->isReview() && $dueCount === 0)
                 <p class="mt-6 text-sm text-muted">Nothing due — the schedule hasn't ripened yet.
@@ -93,7 +97,7 @@
 
             <div class="mt-4 grid gap-2 sm:grid-cols-2">
                 @foreach ($item->choices as $choice)
-                    <button type="button" @click="pick(@js($choice))"
+                    <button type="button" @click="pick(@js($choice))" data-choice="{{ $choice }}"
                             class="rounded-lg border border-border bg-surface px-4 py-3 text-left text-fg hover:border-primary hover:bg-surface-sunken">
                         {{ $choice }}
                     </button>
@@ -135,7 +139,11 @@
         @php($s = $summary['session'])
         <div class="rounded-xl border border-border bg-surface p-6 text-center">
             <h1 class="font-serif text-2xl font-semibold tracking-tight text-fg">
-                {{ $summary['passed'] ? 'Session complete — reflex is stabilizing.' : 'Session complete — keep drilling.' }}
+                @if ($summary['blindSpots'])
+                    Session complete — blind spot found.
+                @else
+                    {{ $summary['passed'] ? 'Session complete — reflex is stabilizing.' : 'Session complete — keep drilling.' }}
+                @endif
             </h1>
 
             <div class="mt-5 grid grid-cols-3 gap-3 text-center">
@@ -152,6 +160,39 @@
                     <div class="text-xs text-muted">{{ $summary['rung']['name'] }}</div>
                 </div>
             </div>
+
+            {{-- Blind-spot floor: a category at 0-for-n caps the rung. --}}
+            @if ($summary['blindSpots'])
+                <div class="mt-5 rounded-lg border border-warning bg-warning-subtle/60 p-4 text-left">
+                    <p class="text-sm font-semibold text-warning-fg">
+                        {{ Str::plural('Blind spot', count($summary['blindSpots'])) }} — nothing correct in
+                        {{ count($summary['blindSpots']) === 1 ? 'this category' : 'these '.count($summary['blindSpots']).' categories' }}
+                    </p>
+                    <ul class="mt-2 space-y-1 text-sm text-fg">
+                        @foreach ($summary['blindSpots'] as $spot)
+                            <li>
+                                <span class="font-medium">{{ $spot['category'] }}</span>
+                                <span class="text-muted">— 0 of {{ $spot['items'] }} {{ Str::plural('item', $spot['items']) }} in this run</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                    <p class="mt-3 text-sm text-muted">
+                        @if ($summary['withheld'])
+                            Accuracy and speed alone read
+                            <span class="font-medium text-fg">L{{ $summary['withheld']['level'] }} · {{ $summary['withheld']['name'] }}</span>,
+                            withheld to <span class="font-medium text-fg">L{{ $summary['level'] }}</span>:
+                            an average across categories hides one you cannot recognize at all.
+                        @else
+                            An average across categories hides one you cannot recognize at all.
+                        @endif
+                        Drill {{ count($summary['blindSpots']) === 1 ? 'it' : 'them' }} before taking on new material.
+                    </p>
+                    @if ($gym->course)
+                        <a href="{{ route('courses.show', $gym->course->slug) }}"
+                           class="mt-3 inline-block text-sm text-primary hover:underline">Find the lesson in {{ $gym->course->title }} &rarr;</a>
+                    @endif
+                </div>
+            @endif
 
             {{-- Red Queen Knowledge Ladder read for this session. --}}
             <div class="mt-5 text-left">

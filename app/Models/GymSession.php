@@ -14,6 +14,7 @@ class GymSession extends Model
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
         'accuracy' => 'float',
+        'blind_spots' => 'array',
     ];
 
     public function user(): BelongsTo

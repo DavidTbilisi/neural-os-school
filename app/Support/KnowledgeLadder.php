@@ -48,6 +48,16 @@ final class KnowledgeLadder
     /** The highest rung a recognition/classification gym awards. */
     public const GYM_CEILING = 7;
 
+    /**
+     * The highest rung awarded to a run with a blind spot — a category whose
+     * every item was missed. Aggregate accuracy hides the hole, so the bands
+     * above this one (5 Operational, 7 Reflexive — the promote band, which is
+     * also what "ready for new material" reads) must not be granted over it.
+     * 4 Classifiable is the honest ceiling: classification is reliable in
+     * general, demonstrably not for that category.
+     */
+    public const BLIND_SPOT_CEILING = 4;
+
     /** @return array{level: int, name: string, standard: string} */
     public static function rung(int $level): array
     {
@@ -76,11 +86,29 @@ final class KnowledgeLadder
 
     /**
      * Map a completed session's performance onto a ladder rung for a
-     * recognition/classification gym. Accuracy climbs the "knowing" rungs;
-     * speed unlocks the reflex rung. Bands are relative to the gym's own
-     * pass/promote/latency targets so tuning a gym re-tunes its ladder.
+     * recognition/classification gym, then apply the blind-spot floor.
+     *
+     * `$hasBlindSpot` = the run contains a category every item of which was
+     * missed (see App\Support\GymScoring::blindSpots()). Aggregate accuracy
+     * averages such a hole away; the floor refuses to award the top band over
+     * it, capping at BLIND_SPOT_CEILING. Callers that have no attempt detail
+     * (e.g. the METER module-coverage read, which scores a *subset* of items
+     * where a missing category means nothing) leave it false and get the
+     * unchanged accuracy+latency mapping.
      */
-    public static function levelForGym(Gym $gym, float $accuracy, ?int $medianLatencyMs): int
+    public static function levelForGym(Gym $gym, float $accuracy, ?int $medianLatencyMs, bool $hasBlindSpot = false): int
+    {
+        $level = self::bandForGym($gym, $accuracy, $medianLatencyMs);
+
+        return $hasBlindSpot ? min($level, self::BLIND_SPOT_CEILING) : $level;
+    }
+
+    /**
+     * The accuracy/latency band, before any floor. Accuracy climbs the
+     * "knowing" rungs; speed unlocks the reflex rung. Bands are relative to the
+     * gym's own pass/promote/latency targets so tuning a gym re-tunes its ladder.
+     */
+    private static function bandForGym(Gym $gym, float $accuracy, ?int $medianLatencyMs): int
     {
         $pass = (float) ($gym->pass_accuracy ?? 0.80);
         $promote = (float) ($gym->promote_accuracy ?? 0.85);

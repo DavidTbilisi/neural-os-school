@@ -29,6 +29,7 @@ class Gym extends Model
         'stages' => 'array',
         'pass_accuracy' => 'float',
         'promote_accuracy' => 'float',
+        'blind_spot_floor' => 'bool',
     ];
 
     public function items(): HasMany
@@ -66,9 +67,9 @@ class Gym extends Model
      * session. Replaces the old ad-hoc per-gym `stages`: the level is derived
      * from this gym's pass/promote/latency targets via App\Support\KnowledgeLadder.
      */
-    public function knowledgeLevelFor(float $accuracy, ?int $medianLatencyMs): int
+    public function knowledgeLevelFor(float $accuracy, ?int $medianLatencyMs, bool $hasBlindSpot = false): int
     {
-        return KnowledgeLadder::levelForGym($this, $accuracy, $medianLatencyMs);
+        return KnowledgeLadder::levelForGym($this, $accuracy, $medianLatencyMs, $hasBlindSpot);
     }
 
     /** Median of a list of latency values (ms), or null when empty. */

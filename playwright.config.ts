@@ -6,7 +6,13 @@ import { defineConfig } from '@playwright/test';
  * one via ./run (and tears it down); if one is already up, it reuses it.
  *
  *   npm run e2e
+ *   E2E_PORT=8010 npm run e2e   # when something else already holds :8000
+ *
+ * Set E2E_PORT whenever another local service owns the default port —
+ * reuseExistingServer would otherwise happily run the whole suite against it.
  */
+const PORT = process.env.E2E_PORT ?? '8000';
+
 export default defineConfig({
     testDir: './e2e',
     timeout: 30_000,
@@ -17,7 +23,7 @@ export default defineConfig({
     use: {
         // 127.0.0.1 (not localhost) so the reuse-probe hits pasta's IPv4 listener
         // instead of IPv6 ::1, which would miss the running container.
-        baseURL: 'http://127.0.0.1:8000',
+        baseURL: `http://127.0.0.1:${PORT}`,
         headless: true,
         trace: 'on-first-retry',
     },
@@ -25,8 +31,8 @@ export default defineConfig({
         { name: 'chromium', use: { browserName: 'chromium' } },
     ],
     webServer: {
-        command: './run php artisan serve --host=0.0.0.0 --port=8000',
-        url: 'http://127.0.0.1:8000',
+        command: `./run php artisan serve --host=0.0.0.0 --port=${PORT}`,
+        url: `http://127.0.0.1:${PORT}`,
         reuseExistingServer: true,
         timeout: 120_000,
     },

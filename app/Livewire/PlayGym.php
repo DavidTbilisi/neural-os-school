@@ -164,6 +164,14 @@ class PlayGym extends Component
             $level = (int) ltrim((string) $session->stage_code, 'L');
             $rung = \App\Support\KnowledgeLadder::rung($level);
 
+            // A floored run reports both numbers: the rung it was awarded and
+            // the rung its raw accuracy+speed would have read, so the learner
+            // sees what the blind spot cost rather than an unexplained plateau.
+            $blindSpots = $session->blind_spots ?? [];
+            $band = $blindSpots === []
+                ? $level
+                : $this->gym->knowledgeLevelFor((float) $session->accuracy, $session->median_latency_ms);
+
             $summary = [
                 'session' => $session,
                 'level' => $level,
@@ -172,6 +180,8 @@ class PlayGym extends Component
                 'ladder' => \App\Support\KnowledgeLadder::all(),
                 'confusion' => $this->topConfusion($session),
                 'passed' => $session->accuracy >= $this->gym->pass_accuracy,
+                'blindSpots' => $blindSpots,
+                'withheld' => $band > $level ? \App\Support\KnowledgeLadder::rung($band) : null,
             ];
         }
 
