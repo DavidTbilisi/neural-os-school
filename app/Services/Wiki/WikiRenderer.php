@@ -3,6 +3,7 @@
 namespace App\Services\Wiki;
 
 use App\Models\Page;
+use App\Support\MarkdownCode;
 use App\Support\Slug;
 use League\CommonMark\Environment\Environment;
 use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
@@ -74,11 +75,15 @@ class WikiRenderer
         return $this->viewable ??= Page::viewable()->pluck('title', 'slug')->all();
     }
 
+    /**
+     * Resolve `[[wiki-links]]`, leaving code samples untouched — a page about
+     * bash's `[[ … ]]` is otherwise stripped of its brackets. See MarkdownCode.
+     */
     private function linkify(string $md): string
     {
         $viewable = $this->viewableSlugs();
 
-        return preg_replace_callback('/\[\[(.+?)\]\]/', function (array $m) use ($viewable) {
+        return MarkdownCode::outsideCode($md, fn (string $prose) => preg_replace_callback('/\[\[(.+?)\]\]/', function (array $m) use ($viewable) {
             $inner = str_replace(['\\|', '\\#'], ['|', '#'], trim($m[1]));
 
             $display = null;
@@ -99,7 +104,7 @@ class WikiRenderer
 
             // Unpublished or non-existent target → plain text, no link.
             return $display !== null ? trim($display) : trim($inner);
-        }, $md);
+        }, $prose));
     }
 
     private function escapeLinkText(string $text): string

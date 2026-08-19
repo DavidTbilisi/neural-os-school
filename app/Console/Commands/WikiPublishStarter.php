@@ -29,6 +29,7 @@ class WikiPublishStarter extends Command
         'graph-theory',
         'networking',
         'math',
+        'linux', // bash-scripting cluster rooted at [[bash-atlas]] — reference pages, no personal content
         'french-song', // staged from tools/french-music-drill by sync-content.sh (own lyrics, no scraped content)
     ];
 

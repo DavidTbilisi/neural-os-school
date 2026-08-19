@@ -101,4 +101,30 @@ class PublicReaderTest extends TestCase
         $this->assertStringNotContainsString('missing-x', $html);
         $this->assertStringContainsString('a ghost', $html); // ghost renders as plain text
     }
+
+    public function test_wiki_links_are_not_resolved_inside_code(): void
+    {
+        $this->page('target-b', Page::VISIBILITY_PUBLIC);
+        $body = "# Page A\n\n---\n\nProse links to [[target-b]].\n\n"
+            ."Inline `[[ -f \$f ]]` stays whole.\n\n"
+            ."```bash\nif [[ -f \"\$f\" ]]; then echo [[target-b]]; fi\n```\n";
+        $a = $this->page('page-a', Page::VISIBILITY_PUBLIC, $body);
+
+        $html = app(WikiRenderer::class)->render($a);
+
+        // The prose link resolved exactly once; the two in code did not.
+        $this->assertSame(1, substr_count($html, 'href="/wiki/target-b"'));
+        $this->assertStringContainsString('[[ -f $f ]]', $html);
+        $this->assertStringContainsString('[[target-b]]', $html);   // survives inside the fence
+    }
+
+    public function test_link_extraction_ignores_code_samples(): void
+    {
+        $parsed = app(\App\Services\Wiki\WikiParser::class)->parse(
+            "# T\n\nSee [[real-target]].\n\n```bash\n[[ -f \"\$f\" ]] && cp [[not-a-link]] /tmp\n```\n",
+            'x/t.md',
+        );
+
+        $this->assertSame(['real-target'], array_column($parsed['links'], 'target_slug'));
+    }
 }

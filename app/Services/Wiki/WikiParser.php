@@ -2,6 +2,7 @@
 
 namespace App\Services\Wiki;
 
+use App\Support\MarkdownCode;
 use App\Support\Slug;
 use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
@@ -96,7 +97,9 @@ class WikiParser
      */
     private function links(string $body): array
     {
-        if (! preg_match_all('/\[\[(.+?)\]\]/', $body, $matches)) {
+        // Code samples are not links: a page documenting bash's `[[ … ]]` would
+        // otherwise fill the graph with slugs like `f-f`. See MarkdownCode.
+        if (! preg_match_all('/\[\[(.+?)\]\]/', MarkdownCode::withoutCode($body), $matches)) {
             return [];
         }
 
