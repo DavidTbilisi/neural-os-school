@@ -15,6 +15,8 @@ const PORT = process.env.E2E_PORT ?? '8000';
 
 export default defineConfig({
     testDir: './e2e',
+    // Clears the login rate limiter; see e2e/global-setup.ts for why.
+    globalSetup: './e2e/global-setup.ts',
     timeout: 30_000,
     expect: { timeout: 10_000 },
     fullyParallel: true,
