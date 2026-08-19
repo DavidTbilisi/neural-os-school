@@ -5,14 +5,14 @@
     GymScoring) via this lesson's tagged GymItems.
 --}}
 <div class="rounded-xl border border-border bg-surface p-6" wire:key="lesson-check-{{ $lesson->id }}">
-    <h2 class="font-serif text-lg font-semibold text-fg mb-3">Check your understanding</h2>
+    <h2 class="font-display text-lg font-bold text-fg mb-3">Check your understanding</h2>
 
     {{-- INTRO ---------------------------------------------------------------}}
     @if ($phase === 'intro')
         @auth
             <p class="text-sm text-muted mb-4">{{ count($order) }} {{ Str::plural('question', count($order)) }} — self-paced, no timer.</p>
             <button wire:click="start"
-                    class="rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-fg hover:bg-primary-hover">
+                    class="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-fg hover:bg-primary-hover">
                 Start check
             </button>
         @else
@@ -57,7 +57,7 @@
         </div>
 
         <button wire:click="next"
-                class="mt-4 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-fg hover:bg-primary-hover">
+                class="mt-4 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-fg hover:bg-primary-hover">
             {{ $round >= $rounds ? 'Done' : 'Next question' }}
         </button>
 

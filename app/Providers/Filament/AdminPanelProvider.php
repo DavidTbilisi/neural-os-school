@@ -31,15 +31,15 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            // Shared design system: oxblood primary + warm Stone gray, Figtree UI,
-            // and the custom theme that remaps Filament onto tokens.css (see
-            // resources/css/filament/admin/theme.css). Amber is demoted to a
-            // semantic accent, applied per-component where needed.
+            // Shared design system: grape primary + neutral Zinc gray, Plus
+            // Jakarta Sans UI, and the custom theme that remaps Filament onto
+            // tokens.css (see resources/css/filament/admin/theme.css). Amber is
+            // demoted to a semantic accent, applied per-component where needed.
             ->colors([
-                'primary' => Color::hex('#8B2E3C'),
-                'gray' => Color::Stone,
+                'primary' => Color::hex('#5B3FD6'),
+                'gray' => Color::Zinc,
             ])
-            ->font('Figtree')
+            ->font('Plus Jakarta Sans')
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')

@@ -2,7 +2,17 @@
     Dark-mode toggle. Alpine (bundled via Livewire) flips `.dark`/`.light` on
     <html> and persists the choice to localStorage; the no-flash script in
     partials/theme-head reads it on the next load.
+
+    `tone="inverse"` is for the black top bar — passing colors through `class`
+    instead would leave two competing text-color utilities on one element and
+    let stylesheet order pick the winner.
 --}}
+@props(['tone' => 'default'])
+
+@php($toneClasses = $tone === 'inverse'
+    ? 'text-bar-fg/70 hover:bg-white/10 hover:text-bar-fg'
+    : 'text-muted hover:bg-surface-sunken hover:text-fg')
+
 <button
     type="button"
     x-data="{
@@ -20,7 +30,7 @@
     x-bind:aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
     aria-label="Toggle dark mode"
     title="Toggle theme"
-    {{ $attributes->merge(['class' => 'inline-flex items-center justify-center rounded-md p-2 text-muted hover:bg-surface-sunken hover:text-fg transition-colors duration-fast']) }}
+    {{ $attributes->merge(['class' => 'inline-flex items-center justify-center rounded-full p-2 transition-colors duration-fast '.$toneClasses]) }}
 >
     {{-- sun — shown in dark mode (click → light) --}}
     <svg x-cloak x-show="dark" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" aria-hidden="true">

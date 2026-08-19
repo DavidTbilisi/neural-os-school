@@ -12,15 +12,15 @@
 
 <article class="rounded-lg border border-border bg-surface px-6 py-8 sm:px-10">
     <header class="mb-8 border-b border-border pb-5">
-        <h1 class="font-serif text-4xl font-semibold tracking-tight text-fg">{{ $page->title }}</h1>
+        <h1 class="font-display text-4xl font-bold tracking-tight text-fg">{{ $page->title }}</h1>
 
         @if ($page->summary)
-            <p class="mt-3 font-serif text-lg text-muted">{{ $page->summary }}</p>
+            <p class="mt-3 font-display text-lg text-muted">{{ $page->summary }}</p>
         @endif
 
         <div class="mt-4 flex flex-wrap items-center gap-2 text-xs">
             @if ($page->domain)
-                <span class="rounded bg-primary-subtle text-primary-subtle-fg px-2 py-0.5">{{ $page->domain->name }}</span>
+                <span class="whitespace-nowrap rounded-full bg-primary-subtle px-2.5 py-1 text-primary-subtle-fg">{{ $page->domain->name }}</span>
             @endif
             @if ($page->palace)
                 <span class="rounded bg-surface-sunken text-muted px-2 py-0.5">{{ $page->palace }}</span>
@@ -38,7 +38,7 @@
     </header>
 
     @if ($courses->isNotEmpty())
-        <div class="mb-6 rounded-md bg-primary-subtle/40 border border-border px-4 py-3 text-sm">
+        <div class="mb-6 rounded-lg bg-primary-subtle/40 border border-border px-4 py-3 text-sm">
             <span class="text-muted">Part of </span>
             @foreach ($courses as $c)
                 <a href="{{ route('courses.show', $c->slug) }}" class="font-medium text-primary hover:underline">{{ $c->title }}</a>@unless ($loop->last),@endunless
@@ -50,12 +50,12 @@
 
     {{--
         The reading column. `prose` handles element structure; the token-mapped
-        --tw-prose-* variables retint it to warm ink / oxblood, and because each
+        --tw-prose-* variables retint it to ink / grape, and because each
         resolves to a CSS variable that flips on `.dark`, dark mode needs no
-        `dark:prose-invert`. `font-serif` gives the book voice; code stays mono.
+        `dark:prose-invert`. `font-display` is the one sans voice; code stays mono.
     --}}
-    <div class="prose prose-lg max-w-none font-serif
-                prose-headings:font-serif prose-headings:scroll-mt-20
+    <div class="prose prose-lg max-w-none font-display
+                prose-headings:font-display prose-headings:scroll-mt-20
                 prose-code:font-mono prose-code:font-normal prose-code:rounded prose-code:bg-surface-sunken prose-code:px-1 prose-code:py-0.5
                 prose-code:before:content-none prose-code:after:content-none
                 prose-pre:font-mono prose-pre:text-sm prose-pre:leading-snug

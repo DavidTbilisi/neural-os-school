@@ -1,9 +1,10 @@
 @props(['active'])
 
 @php
+// Pills on the black bar, not underlines — the active item is a filled chip.
 $classes = ($active ?? false)
-            ? 'inline-flex items-center px-1 pt-1 border-b-2 border-indigo-400 text-sm font-medium leading-5 text-gray-900 focus:outline-none focus:border-indigo-700 transition duration-150 ease-in-out'
-            : 'inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none focus:text-gray-700 focus:border-gray-300 transition duration-150 ease-in-out';
+            ? 'inline-flex items-center rounded-full bg-white/15 px-3 py-1.5 text-sm font-semibold text-bar-fg transition-colors duration-fast'
+            : 'inline-flex items-center rounded-full px-3 py-1.5 text-sm text-bar-fg/70 transition-colors duration-fast hover:bg-white/10 hover:text-bar-fg';
 @endphp
 
 <a {{ $attributes->merge(['class' => $classes]) }}>

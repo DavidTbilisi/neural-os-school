@@ -9,7 +9,7 @@
     {{-- INTRO ---------------------------------------------------------------}}
     @if ($phase === 'intro')
         <div class="rounded-xl border border-border bg-surface p-6 text-center">
-            <h1 class="font-serif text-3xl font-semibold tracking-tight text-fg">
+            <h1 class="font-display text-3xl font-bold tracking-tight text-fg">
                 {{ $gym->title }}@if ($this->isReview()) <span class="text-primary">· Review</span>@endif
             </h1>
             @if ($this->isReview())
@@ -38,7 +38,7 @@
                 </p>
             @else
                 <button wire:click="start"
-                        class="mt-6 rounded-md bg-primary px-6 py-2.5 text-sm font-semibold text-primary-fg hover:bg-primary-hover">
+                        class="mt-6 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-fg hover:bg-primary-hover">
                     {{ $this->isReview() ? 'Start review' : 'Start session' }}
                 </button>
                 @if (! $this->isReview() && $dueCount > 0)
@@ -130,7 +130,7 @@
         </div>
 
         <button wire:click="next"
-                class="mt-4 w-full rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-fg hover:bg-primary-hover">
+                class="mt-4 w-full rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-primary-fg hover:bg-primary-hover">
             {{ $round >= $rounds ? 'See summary' : 'Next round' }}
         </button>
 
@@ -138,7 +138,7 @@
     @elseif ($phase === 'summary' && $summary)
         @php($s = $summary['session'])
         <div class="rounded-xl border border-border bg-surface p-6 text-center">
-            <h1 class="font-serif text-2xl font-semibold tracking-tight text-fg">
+            <h1 class="font-display text-2xl font-bold tracking-tight text-fg">
                 @if ($summary['blindSpots'])
                     Session complete — blind spot found.
                 @else
@@ -146,18 +146,20 @@
                 @endif
             </h1>
 
+            {{-- Tinted tiles: the fill carries the read, so accuracy is green
+                 ONLY when it passed — a grey tile is itself the signal. --}}
             <div class="mt-5 grid grid-cols-3 gap-3 text-center">
-                <div class="rounded-lg bg-surface-sunken p-3">
-                    <div class="text-2xl font-bold {{ $summary['passed'] ? 'text-success' : 'text-fg' }}">{{ round($s->accuracy * 100) }}%</div>
-                    <div class="text-xs text-muted">{{ $s->correct }}/{{ $s->total }} correct</div>
+                <div class="rounded-lg p-4 {{ $summary['passed'] ? 'bg-success-subtle' : 'bg-surface-sunken' }}">
+                    <div class="text-2xl font-bold {{ $summary['passed'] ? 'text-success-fg' : 'text-fg' }}">{{ round($s->accuracy * 100) }}%</div>
+                    <div class="text-xs {{ $summary['passed'] ? 'text-success-fg/80' : 'text-muted' }}">{{ $s->correct }}/{{ $s->total }} correct</div>
                 </div>
-                <div class="rounded-lg bg-surface-sunken p-3">
-                    <div class="text-2xl font-bold text-fg">{{ $s->median_latency_ms ? number_format($s->median_latency_ms / 1000, 1) : '—' }}s</div>
-                    <div class="text-xs text-muted">median response</div>
+                <div class="rounded-lg bg-info-subtle p-4">
+                    <div class="text-2xl font-bold text-info-fg">{{ $s->median_latency_ms ? number_format($s->median_latency_ms / 1000, 1) : '—' }}s</div>
+                    <div class="text-xs text-info-fg/80">median response</div>
                 </div>
-                <div class="rounded-lg bg-surface-sunken p-3">
-                    <div class="text-2xl font-bold text-primary">L{{ $summary['level'] }}</div>
-                    <div class="text-xs text-muted">{{ $summary['rung']['name'] }}</div>
+                <div class="rounded-lg bg-primary-subtle p-4">
+                    <div class="text-2xl font-bold text-primary-subtle-fg">L{{ $summary['level'] }}</div>
+                    <div class="text-xs text-primary-subtle-fg/80">{{ $summary['rung']['name'] }}</div>
                 </div>
             </div>
 
@@ -221,9 +223,9 @@
             @endif
 
             <div class="mt-6 flex items-center justify-center gap-3">
-                <button wire:click="start" class="rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-fg hover:bg-primary-hover">Play again</button>
+                <button wire:click="start" class="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-fg hover:bg-primary-hover">Play again</button>
                 @if ($gym->course)
-                    <a href="{{ route('courses.show', $gym->course->slug) }}" class="rounded-md border border-border px-5 py-2 text-sm text-fg hover:bg-surface-sunken">Back to course</a>
+                    <a href="{{ route('courses.show', $gym->course->slug) }}" class="rounded-full border border-border px-5 py-2 text-sm text-fg hover:bg-surface-sunken">Back to course</a>
                 @endif
             </div>
         </div>

@@ -1,6 +1,6 @@
 <div>
     <div class="mb-6">
-        <h1 class="font-serif text-3xl font-semibold tracking-tight text-fg">Library</h1>
+        <h1 class="font-display text-3xl font-bold tracking-tight text-fg">Library</h1>
         <p class="text-sm text-muted mt-1">{{ number_format($total) }} published pages</p>
     </div>
 
@@ -22,11 +22,11 @@
     <ul class="divide-y divide-border-subtle rounded-lg border border-border bg-surface">
         @forelse ($pages as $page)
             <li class="px-4 py-3 hover:bg-surface-sunken transition-colors duration-fast">
-                <a href="{{ route('wiki.show', $page->slug) }}" class="font-serif text-lg text-fg hover:text-primary hover:underline">
+                <a href="{{ route('wiki.show', $page->slug) }}" class="font-display text-lg text-fg hover:text-primary hover:underline">
                     {{ $page->title }}
                 </a>
                 @if ($page->domain)
-                    <span class="ml-2 align-middle text-xs rounded bg-primary-subtle text-primary-subtle-fg px-1.5 py-0.5">{{ $page->domain->name }}</span>
+                    <span class="ml-2 whitespace-nowrap rounded-full bg-primary-subtle px-2.5 py-1 align-middle text-xs text-primary-subtle-fg">{{ $page->domain->name }}</span>
                 @endif
                 @if ($page->summary)
                     <p class="text-sm text-muted mt-1">{{ Str::limit($page->summary, 200) }}</p>

@@ -93,37 +93,45 @@ export default {
         fg: c('info-fg'),
       },
 
+      // The top bar — dark in BOTH themes (see tokens.css); bg-bar / text-bar-fg
+      bar: {
+        DEFAULT: c('bar'),
+        fg: c('bar-fg'),
+      },
+
       // Full-value (no alpha placeholder)
       overlay: 'var(--color-overlay)',
     },
 
-    // Serif = display/headings/reading (the book voice); sans (Figtree) = UI/data;
-    // mono = code/telemetry. `font-display` aliases the serif.
+    // One geometric-humanist family for display, headings, UI and reading.
+    // `serif` is a RETIRED ALIAS pointing at the same face, so existing
+    // `font-serif` markup follows the new voice instead of needing a rename.
     fontFamily: {
-      serif: ['Newsreader', 'ui-serif', 'Georgia', 'Cambria', 'serif'],
-      display: ['Newsreader', 'ui-serif', 'Georgia', 'Cambria', 'serif'],
-      sans: ['Figtree', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+      display: ['"Plus Jakarta Sans"', 'Figtree', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+      serif: ['"Plus Jakarta Sans"', 'Figtree', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+      sans: ['"Plus Jakarta Sans"', 'Figtree', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
       mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
     },
 
     fontSize: {
-      // Comfortable reading-room ramp; `lg` (18px) is the serif reading-column body
+      // Friendly app ramp; `lg` (17px) is the reading-column body. Headings
+      // pull their tracking in as they grow — the display sizes are set bold.
       xs: ['0.75rem', { lineHeight: '1.4' }],
       sm: ['0.8125rem', { lineHeight: '1.45' }],
       base: ['0.9375rem', { lineHeight: '1.55' }],
       md: ['1rem', { lineHeight: '1.6' }],
-      lg: ['1.125rem', { lineHeight: '1.75' }],
-      xl: ['1.375rem', { lineHeight: '1.4' }],
-      '2xl': ['1.75rem', { lineHeight: '1.25' }],
-      '3xl': ['2.25rem', { lineHeight: '1.2' }],
-      '4xl': ['3rem', { lineHeight: '1.15', letterSpacing: '-0.01em' }],
+      lg: ['1.0625rem', { lineHeight: '1.7' }],
+      xl: ['1.375rem', { lineHeight: '1.35', letterSpacing: '-0.015em' }],
+      '2xl': ['1.75rem', { lineHeight: '1.2', letterSpacing: '-0.02em' }],
+      '3xl': ['2.25rem', { lineHeight: '1.15', letterSpacing: '-0.025em' }],
+      '4xl': ['3rem', { lineHeight: '1.05', letterSpacing: '-0.03em' }],
     },
 
     borderRadius: {
-      sm: 'var(--radius-sm)',   /* 4 */
-      md: 'var(--radius-md)',   /* 6 */
-      lg: 'var(--radius-lg)',   /* 10 */
-      xl: 'var(--radius-xl)',   /* 14 */
+      sm: 'var(--radius-sm)',   /* 10 — inputs, small chips */
+      md: 'var(--radius-md)',   /* 14 — buttons, list rows */
+      lg: 'var(--radius-lg)',   /* 20 — cards */
+      xl: 'var(--radius-xl)',   /* 28 — panels */
       full: 'var(--radius-full)',
     },
 

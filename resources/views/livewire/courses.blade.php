@@ -1,6 +1,6 @@
 <div>
     <div class="mb-6">
-        <h1 class="font-serif text-3xl font-semibold tracking-tight text-fg">Courses</h1>
+        <h1 class="font-display text-3xl font-bold tracking-tight text-fg">Courses</h1>
         <p class="text-sm text-muted mt-1">Guided paths through the wiki — {{ $cards->count() }} published.</p>
     </div>
 
@@ -15,7 +15,7 @@
                 <a href="{{ route('courses.show', $course->slug) }}"
                    class="block rounded-lg border border-border bg-surface p-4 hover:border-primary hover:shadow-sm transition">
                     <div class="flex items-start justify-between gap-2">
-                        <h2 class="font-serif text-lg font-semibold text-fg">{{ $course->title }}</h2>
+                        <h2 class="font-display text-lg font-bold text-fg">{{ $course->title }}</h2>
                         @if ($card['enrolled'])
                             <span class="shrink-0 text-xs rounded-full bg-success-subtle text-success-fg px-2 py-0.5">Enrolled</span>
                         @elseif (! $card['prereqsMet'])
@@ -27,9 +27,9 @@
                         <p class="mt-1 text-sm text-muted">{{ Str::limit($course->subtitle, 140) }}</p>
                     @endif
 
-                    <div class="mt-3 flex items-center gap-2 text-xs text-muted">
+                    <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted">
                         @if ($course->domain)
-                            <span class="rounded bg-primary-subtle text-primary-subtle-fg px-1.5 py-0.5">{{ $course->domain->name }}</span>
+                            <span class="whitespace-nowrap rounded-full bg-primary-subtle px-2.5 py-1 text-primary-subtle-fg">{{ $course->domain->name }}</span>
                         @endif
                         <span>{{ $card['moduleCount'] }} modules</span>
                         <span aria-hidden="true">·</span>

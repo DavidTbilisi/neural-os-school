@@ -25,13 +25,13 @@
 
     <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
-            <h1 class="font-serif text-3xl font-semibold tracking-tight text-fg">{{ $course->title }}</h1>
+            <h1 class="font-display text-3xl font-bold tracking-tight text-fg">{{ $course->title }}</h1>
             @if ($course->subtitle)
                 <p class="mt-1 text-muted">{{ $course->subtitle }}</p>
             @endif
             <div class="mt-2 flex items-center gap-2 text-xs text-muted">
                 @if ($course->domain)
-                    <span class="rounded bg-primary-subtle text-primary-subtle-fg px-1.5 py-0.5">{{ $course->domain->name }}</span>
+                    <span class="whitespace-nowrap rounded-full bg-primary-subtle px-2.5 py-1 text-primary-subtle-fg">{{ $course->domain->name }}</span>
                 @endif
                 <span>{{ $course->modules->count() }} modules · {{ $requiredTotal }} required lessons</span>
             </div>
@@ -50,7 +50,7 @@
                 </div>
             @else
                 <button wire:click="enroll"
-                        class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-fg hover:bg-primary-hover">
+                        class="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-fg hover:bg-primary-hover">
                     {{ auth()->check() ? 'Enroll' : 'Log in to enroll' }}
                 </button>
             @endif

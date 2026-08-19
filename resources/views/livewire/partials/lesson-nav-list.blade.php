@@ -15,7 +15,7 @@
         <section class="rounded-lg border border-border bg-surface">
             <header class="border-b border-border px-4 py-3">
                 <div class="flex items-center justify-between gap-3">
-                    <h3 class="font-serif font-semibold text-fg">
+                    <h3 class="font-display font-bold text-fg">
                         <span class="text-subtle">{{ $mi + 1 }}.</span> {{ $module->title }}
                     </h3>
                     @php($ev = $moduleEvidence[$module->id] ?? null)

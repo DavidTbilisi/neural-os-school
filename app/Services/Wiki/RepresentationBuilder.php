@@ -23,11 +23,16 @@ use App\Models\Page;
 class RepresentationBuilder
 {
     /** Categorical node palette, legible on both warm-paper and warm-charcoal. */
+    /**
+     * Categorical, NOT brand: a domain keeps its color across restyles so a
+     * reader can recognize it between diagrams. Deliberately left warm when the
+     * palette moved to grape/candy — identity beats hue harmony here.
+     */
     private const DOMAIN_COLORS = [
         '#3A6B8A', '#5C7A45', '#B8842B', '#C0392B', '#6B5B95',
         '#4E8A8B', '#A0562B', '#7A7D45', '#8A5D9A', '#3E7A6B',
     ];
-    private const CENTER_COLOR = '#8B2E3C'; // oxblood
+    private const CENTER_COLOR = '#5B3FD6'; // grape — the brand hue (tokens.css --color-primary)
 
     /** keyword => emoji, for palace/scene tiles. */
     private const GLYPHS = [
@@ -113,7 +118,7 @@ class RepresentationBuilder
                 // hideOverlap drops colliding labels so a dense neighbourhood stays legible.
                 'labelLayout' => ['hideOverlap' => true],
                 'force' => ['repulsion' => 520, 'edgeLength' => [120, 200], 'gravity' => 0.05, 'friction' => 0.12],
-                'lineStyle' => ['color' => '#B0A489', 'opacity' => 0.55, 'width' => 1.2, 'curveness' => 0.06],
+                'lineStyle' => ['color' => '#C6C8C2', 'opacity' => 0.55, 'width' => 1.2, 'curveness' => 0.06],
                 'emphasis' => ['focus' => 'adjacency', 'label' => ['show' => true], 'lineStyle' => ['width' => 2.5]],
                 'data' => $nodes,
                 'links' => $links,
@@ -155,7 +160,7 @@ class RepresentationBuilder
             }
         }
         // Tint the root node (a `style` statement is more robust than class/classDef).
-        $lines[] = sprintf('  style %s fill:#8B2E3C,stroke:#8B2E3C,color:#FBF8F1', $root);
+        $lines[] = sprintf('  style %s fill:#5B3FD6,stroke:#5B3FD6,color:#FFFFFF', $root);
 
         return ['mermaid' => implode("\n", $lines)];
     }

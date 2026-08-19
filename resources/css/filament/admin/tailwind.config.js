@@ -4,7 +4,7 @@ import preset from '../../../../vendor/filament/support/tailwind.config.preset.j
  * Theme-local Tailwind config for the Filament admin panel (referenced by
  * `@config 'tailwind.config.js'` in theme.css). It extends Filament's preset —
  * NOT the app's root config — so the panel keeps Filament's own type/spacing
- * scale intact. The oxblood palette comes from AdminPanelProvider->colors()
+ * scale intact. The grape palette comes from AdminPanelProvider->colors()
  * plus the CSS-variable remaps in theme.css.
  *
  * @type {import('tailwindcss').Config}

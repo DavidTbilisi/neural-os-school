@@ -4,7 +4,7 @@
     before the stylesheet paints (prevents a light→dark flash).
 --}}
 <link rel="preconnect" href="https://fonts.bunny.net">
-<link rel="stylesheet" href="https://fonts.bunny.net/css?family=figtree:400,500,600,700|newsreader:400,500,600,700|jetbrains-mono:400,500&display=swap" />
+<link rel="stylesheet" href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|jetbrains-mono:400,500&display=swap" />
 
 <script>
     (function () {

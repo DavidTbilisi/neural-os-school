@@ -24,7 +24,7 @@
     aria-label="Visual representations"
 >
     <div class="mb-5 flex items-baseline gap-3">
-        <h2 class="font-serif text-2xl font-semibold text-fg">See it {{ count($reps['panels']) }} ways</h2>
+        <h2 class="font-display text-2xl font-bold text-fg">See it {{ count($reps['panels']) }} ways</h2>
         <span class="text-sm text-subtle">the same note, four+ representations</span>
     </div>
 
@@ -109,7 +109,7 @@
                                 <span class="absolute right-3 top-3 grid h-6 w-6 place-items-center rounded-full bg-primary text-xs font-bold text-primary-fg">{{ $tile['badge'] }}</span>
                             @endif
                             <span class="mb-3 block text-3xl leading-none">{{ $tile['glyph'] }}</span>
-                            <p class="mb-1 font-serif text-lg text-fg">{{ $tile['label'] }}</p>
+                            <p class="mb-1 font-display text-lg text-fg">{{ $tile['label'] }}</p>
                             @if ($tile['note'])
                                 <p class="text-sm text-muted">{{ $tile['note'] }}</p>
                             @endif
@@ -123,7 +123,7 @@
         <div x-show="tab === 'scene'" style="display:none">
             <p class="mb-3 text-sm text-muted">One image to freeze the whole note.</p>
             <div class="rounded-xl border border-border bg-gradient-to-br from-primary-subtle/50 to-surface p-8">
-                <h3 class="mb-7 text-center font-serif text-2xl text-fg">{{ $reps['scene']['title'] }}</h3>
+                <h3 class="mb-7 text-center font-display text-2xl text-fg">{{ $reps['scene']['title'] }}</h3>
                 @if (! empty($reps['scene']['elements']))
                     <div class="mb-7 flex flex-wrap items-stretch justify-center gap-4">
                         @foreach ($reps['scene']['elements'] as $el)
@@ -138,7 +138,7 @@
                     </div>
                 @endif
                 @if ($reps['scene']['caption'])
-                    <p class="mx-auto max-w-prose text-center font-serif text-lg italic text-muted">{{ $reps['scene']['caption'] }}</p>
+                    <p class="mx-auto max-w-prose text-center font-display text-lg italic text-muted">{{ $reps['scene']['caption'] }}</p>
                 @endif
             </div>
         </div>
