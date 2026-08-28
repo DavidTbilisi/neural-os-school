@@ -1,6 +1,9 @@
 <?php
 
 use App\Livewire\Actions\Logout;
+use App\Support\Navigation;
+use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\On;
 use Livewire\Volt\Component;
 
 new class extends Component
@@ -13,6 +16,21 @@ new class extends Component
         $logout();
 
         $this->redirect('/', navigate: true);
+    }
+
+    /**
+     * Repaint the bar the moment the profile form saves a new arrangement, so
+     * the learner sees the change land instead of having to reload.
+     */
+    #[On('nav-updated')]
+    public function refresh(): void
+    {
+        //
+    }
+
+    public function with(): array
+    {
+        return ['items' => Navigation::for(Auth::user())];
     }
 }; ?>
 
@@ -30,17 +48,11 @@ new class extends Component
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-1 sm:ms-8 sm:flex sm:items-center">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Dashboard') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('library')" :active="request()->routeIs('library')">
-                        {{ __('Library') }}
-                    </x-nav-link>
-                    @if (auth()->user()?->isStaff())
-                        <x-nav-link :href="url('/admin')">
-                            {{ __('Admin') }}
+                    @foreach ($items as $item)
+                        <x-nav-link :href="$item['href']" :active="$item['route'] && request()->routeIs($item['route'])">
+                            {{ __($item['label']) }}
                         </x-nav-link>
-                    @endif
+                    @endforeach
                 </div>
             </div>
 
@@ -91,17 +103,11 @@ new class extends Component
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
-                {{ __('Dashboard') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('library')" :active="request()->routeIs('library')">
-                {{ __('Library') }}
-            </x-responsive-nav-link>
-            @if (auth()->user()?->isStaff())
-                <x-responsive-nav-link :href="url('/admin')">
-                    {{ __('Admin') }}
+            @foreach ($items as $item)
+                <x-responsive-nav-link :href="$item['href']" :active="$item['route'] && request()->routeIs($item['route'])">
+                    {{ __($item['label']) }}
                 </x-responsive-nav-link>
-            @endif
+            @endforeach
         </div>
 
         <!-- Responsive Settings Options -->

@@ -19,20 +19,19 @@
             <a href="{{ route('library') }}" class="mr-4 font-display text-md font-extrabold tracking-tight text-bar-fg">
                 Neural&nbsp;OS&nbsp;School
             </a>
-            <a href="{{ route('library') }}" class="{{ $navLink }}">Library</a>
-            <a href="{{ route('courses') }}" class="{{ $navLink }}">Courses</a>
-            <a href="{{ route('gyms') }}" class="{{ $navLink }}">Gyms</a>
+            {{-- The links themselves are owned by App\Support\Navigation: which
+                 ones exist, who may see them, and the order this particular
+                 learner arranged them in. The view only paints them. --}}
+            <nav class="flex items-center gap-1">
+                @foreach(\App\Support\Navigation::for(auth()->user()) as $item)
+                    <a href="{{ $item['href'] }}" class="{{ $navLink }}">{{ $item['label'] }}</a>
+                @endforeach
+            </nav>
             <nav class="ml-auto flex items-center gap-1">
-                @auth
-                    <a href="{{ route('courses.mine') }}" class="{{ $navLink }}">My courses</a>
-                    <a href="/dashboard" class="{{ $navLink }}">Dashboard</a>
-                    @if(auth()->user()->isStaff())
-                        <a href="/admin" class="{{ $navLink }}">Admin</a>
-                    @endif
-                @else
+                @guest
                     <a href="/login" class="{{ $navLink }}">Log in</a>
                     <a href="/register" class="ml-2 rounded-full bg-bar-fg px-4 py-1.5 text-sm font-semibold text-bar hover:opacity-90">Register</a>
-                @endauth
+                @endguest
                 <x-theme-toggle tone="inverse" class="ml-1" />
             </nav>
         </div>

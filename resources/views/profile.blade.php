@@ -21,6 +21,12 @@
 
             <div class="p-4 sm:p-8 border border-border bg-surface sm:rounded-lg">
                 <div class="max-w-xl">
+                    <livewire:profile.nav-preferences-form />
+                </div>
+            </div>
+
+            <div class="p-4 sm:p-8 border border-border bg-surface sm:rounded-lg">
+                <div class="max-w-xl">
                     <livewire:profile.delete-user-form />
                 </div>
             </div>
